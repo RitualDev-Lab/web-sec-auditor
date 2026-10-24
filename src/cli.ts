@@ -2,7 +2,9 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { DastScanner } from "./dast/index.js";
+import { startMcpServer } from "./mcp/index.js";
 import { PatchEngine } from "./patch/index.js";
+import { generateHtmlReport, generateSarifReport } from "./reporting/index.js";
 import { SastScanner } from "./sast/index.js";
 import { ScaScanner } from "./sca/index.js";
 import { SecretHunter } from "./secrets/index.js";
@@ -16,7 +18,7 @@ import type {
   SupportedLanguage,
 } from "./types/index.js";
 
-const VERSION = "0.4.0";
+const VERSION = "1.0.0";
 
 const HELP_TEXT = `
   🛡️  WebSecAuditor - Enterprise AI Web Cybersecurity Auditor v${VERSION}
@@ -28,17 +30,22 @@ const HELP_TEXT = `
     web-sec-auditor [command] [options]
 
   COMMANDS:
+    audit [target]        Run unified multi-vector audit (DAST if URL, or SAST+Secrets+SCA)
     scan-url <url>        Audit a live web application or API endpoint (DAST & Headers)
     scan-code <path>      Audit local source code or repository (SAST & OWASP Top 10)
     scan-secrets <path>   Hunt for leaked API keys and high-entropy credentials
     scan-deps <path>      Audit third-party dependencies for known CVEs (SCA via OSV)
     patch <file>          Apply an automated remediation patch to a vulnerable line
+    mcp                   Start Model Context Protocol (MCP) server over stdio
     status                Display auditor capabilities and supported security checks
     help                  Display this help message
 
   OPTIONS:
     --format <text|json>        Output format (default: text)
-    --threshold <level>         Minimum severity (CRITICAL, HIGH, MEDIUM, LOW, INFO)
+    --sarif <file.sarif>        Export standardized OASIS SARIF v2.1.0 log
+    --html <file.html>          Export self-contained interactive HTML executive dashboard
+    --fail-on <level>           CI/CD break-build gate (CRITICAL, HIGH, MEDIUM, LOW)
+    --threshold <level>         Minimum severity threshold (CRITICAL, HIGH, MEDIUM, LOW, INFO)
     --timeout <ms>              Request timeout in milliseconds (default: 10000)
     --languages <lang1,lang2>   Filter languages for SAST (ts, js, py, go)
     --min-entropy <float>       Minimum Shannon entropy threshold for secret hunter (default: 3.5)
@@ -53,12 +60,36 @@ const HELP_TEXT = `
     --help, -h                  Display help
 
   EXAMPLES:
+    web-sec-auditor audit . --sarif report.sarif --html report.html --fail-on HIGH
     web-sec-auditor scan-url https://example.com
     web-sec-auditor scan-code ./src --threshold HIGH --diff
     web-sec-auditor scan-secrets . --git-history
     web-sec-auditor scan-deps . --dev
     web-sec-auditor patch ./src/user.ts --line 42 --rule SEC-INJ-SQLI
+    web-sec-auditor mcp
 `;
+
+const SEVERITY_RANKS: Record<FindingSeverity, number> = {
+  CRITICAL: 4,
+  HIGH: 3,
+  MEDIUM: 2,
+  LOW: 1,
+  INFO: 0,
+};
+
+function checkFailOn(findings: Array<{ severity: FindingSeverity }>, failOnLevel?: string): void {
+  if (!failOnLevel) return;
+  const targetRank = SEVERITY_RANKS[failOnLevel.toUpperCase() as FindingSeverity];
+  if (targetRank === undefined) return;
+
+  const failingIssues = findings.filter((f) => SEVERITY_RANKS[f.severity] >= targetRank);
+  if (failingIssues.length > 0) {
+    console.error(
+      `\n🚨 CI/CD Gate Broken: Found ${failingIssues.length} issue(s) matching or exceeding threshold '${failOnLevel.toUpperCase()}'.`,
+    );
+    process.exit(1);
+  }
+}
 
 function getGradeBadge(grade: SecurityGrade): string {
   switch (grade) {
@@ -350,7 +381,97 @@ async function main() {
     process.exit(0);
   }
 
+  // Handle MCP server start
+  if (command === "mcp") {
+    await startMcpServer();
+    return;
+  }
+
+  const sarifIdx = args.indexOf("--sarif");
+  const sarifPath = sarifIdx !== -1 ? args[sarifIdx + 1] : undefined;
+
+  const htmlIdx = args.indexOf("--html");
+  const htmlPath = htmlIdx !== -1 ? args[htmlIdx + 1] : undefined;
+
+  const failOnIdx = args.indexOf("--fail-on");
+  const failOnLevel = failOnIdx !== -1 ? args[failOnIdx + 1] : undefined;
+
   switch (command) {
+    case "audit": {
+      const target = args[1] || ".";
+      const isUrl = target.startsWith("http://") || target.startsWith("https://");
+
+      console.log(`\n🛡️  Starting Unified Security Audit on '${target}'...`);
+
+      let dastReport: DastScanReport | undefined;
+      let sastReport: SastScanReport | undefined;
+      let secretReport: SecretScanReport | undefined;
+      let scaReport: ScaScanReport | undefined;
+
+      if (isUrl) {
+        const dast = new DastScanner();
+        dastReport = await dast.scanUrl(target);
+        console.log(renderTextReport(dastReport));
+      } else {
+        // 1. SAST scan
+        const sast = new SastScanner();
+        sastReport = await sast.scanPath(target);
+        console.log(renderSastTextReport(sastReport, args.includes("--diff")));
+
+        // 2. Secret scan
+        const hunter = new SecretHunter();
+        secretReport = await hunter.scanPath(target);
+        console.log(renderSecretsTextReport(secretReport));
+
+        // 3. SCA scan (if package.json exists)
+        try {
+          const pkgPath = path.resolve(target, "package.json");
+          await fs.stat(pkgPath);
+          const sca = new ScaScanner();
+          scaReport = await sca.scanManifest(pkgPath, {
+            includeDev: args.includes("--dev"),
+          });
+          console.log(renderScaTextReport(scaReport));
+        } catch {
+          // No package.json in target directory
+        }
+      }
+
+      // Export SARIF if requested
+      if (sarifPath) {
+        const sarifLog = generateSarifReport({
+          dastReport,
+          sastReport,
+          secretReport,
+          scaReport,
+        });
+        await fs.writeFile(path.resolve(sarifPath), JSON.stringify(sarifLog, null, 2), "utf-8");
+        console.log(`📄 Standardized SARIF v2.1.0 report saved to '${sarifPath}'`);
+      }
+
+      // Export HTML if requested
+      if (htmlPath) {
+        const htmlDoc = generateHtmlReport({
+          dastReport,
+          sastReport,
+          secretReport,
+          scaReport,
+        });
+        await fs.writeFile(path.resolve(htmlPath), htmlDoc, "utf-8");
+        console.log(`📊 Executive HTML dashboard saved to '${htmlPath}'`);
+      }
+
+      // Evaluate CI/CD fail-on gate
+      const allFindings = [
+        ...(dastReport?.findings || []),
+        ...(sastReport?.findings || []),
+        ...(secretReport?.findings || []),
+        ...(scaReport?.findings || []),
+      ];
+      checkFailOn(allFindings, failOnLevel);
+      break;
+    }
+
     case "scan-url": {
       const targetUrl = args[1];
       if (!targetUrl) {
@@ -377,6 +498,14 @@ async function main() {
         } else {
           console.log(renderTextReport(report));
         }
+
+        if (sarifPath) {
+          const sarifLog = generateSarifReport({ dastReport: report });
+          await fs.writeFile(path.resolve(sarifPath), JSON.stringify(sarifLog, null, 2), "utf-8");
+          console.log(`📄 SARIF report saved to '${sarifPath}'`);
+        }
+
+        checkFailOn(report.findings, failOnLevel);
       } catch (err) {
         console.error(`❌ Scan failed for ${targetUrl}: ${(err as Error).message}`);
         process.exit(1);
@@ -415,6 +544,14 @@ async function main() {
         } else {
           console.log(renderSastTextReport(report, showDiff));
         }
+
+        if (sarifPath) {
+          const sarifLog = generateSarifReport({ sastReport: report });
+          await fs.writeFile(path.resolve(sarifPath), JSON.stringify(sarifLog, null, 2), "utf-8");
+          console.log(`📄 SARIF report saved to '${sarifPath}'`);
+        }
+
+        checkFailOn(report.findings, failOnLevel);
       } catch (err) {
         console.error(`❌ SAST scan failed for path '${targetPath}': ${(err as Error).message}`);
         process.exit(1);
@@ -447,6 +584,14 @@ async function main() {
         } else {
           console.log(renderSecretsTextReport(report));
         }
+
+        if (sarifPath) {
+          const sarifLog = generateSarifReport({ secretReport: report });
+          await fs.writeFile(path.resolve(sarifPath), JSON.stringify(sarifLog, null, 2), "utf-8");
+          console.log(`📄 SARIF report saved to '${sarifPath}'`);
+        }
+
+        checkFailOn(report.findings, failOnLevel);
       } catch (err) {
         console.error(`❌ Secret hunt failed for '${targetPath}': ${(err as Error).message}`);
         process.exit(1);
@@ -479,6 +624,14 @@ async function main() {
         } else {
           console.log(renderScaTextReport(report));
         }
+
+        if (sarifPath) {
+          const sarifLog = generateSarifReport({ scaReport: report });
+          await fs.writeFile(path.resolve(sarifPath), JSON.stringify(sarifLog, null, 2), "utf-8");
+          console.log(`📄 SARIF report saved to '${sarifPath}'`);
+        }
+
+        checkFailOn(report.findings, failOnLevel);
       } catch (err) {
         console.error(`❌ Dependency scan failed for '${targetPath}': ${(err as Error).message}`);
         process.exit(1);
@@ -559,7 +712,10 @@ Engines:
   [Phase 4] CVSS v3.1 Scoring Engine     - ACTIVE (Base Score, Impact, Exploitability, Vectors)
   [Phase 4] Compliance Mapping Engine    - ACTIVE (OWASP, PCI-DSS v4.0, SOC 2, CWE Top 25)
   [Phase 4] Automated Code Patch Engine  - ACTIVE (Unified Git Diff & Direct Remediation)
-  [Phase 5] SARIF v2.1.0 & MCP Server    - PLANNED
+  [Phase 5] OASIS SARIF v2.1.0 Exporter  - ACTIVE (GitHub Advanced Security & GitLab)
+  [Phase 5] Executive HTML Dashboard     - ACTIVE (Self-Contained Interactive Dashboard)
+  [Phase 5] Universal MCP Server         - ACTIVE (Cursor, Claude Desktop, Antigravity)
+  [Phase 5] CI/CD Break-Build Gate       - ACTIVE (--fail-on critical|high|medium|low)
 `);
       break;
     }

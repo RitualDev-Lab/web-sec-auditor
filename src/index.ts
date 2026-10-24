@@ -5,3 +5,5 @@ export * from "./secrets/index.js";
 export * from "./sca/index.js";
 export * from "./compliance/index.js";
 export * from "./patch/index.js";
+export * from "./reporting/index.js";
+export * from "./mcp/index.js";

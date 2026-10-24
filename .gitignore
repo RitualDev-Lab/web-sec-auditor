@@ -6,3 +6,5 @@ coverage/
 .env
 .env.*
 !.env.example
+*.sarif
+report.html

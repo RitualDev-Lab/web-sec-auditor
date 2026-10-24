@@ -1,6 +1,6 @@
 {
   "name": "@ritualdev-lab/web-sec-auditor",
-  "version": "0.4.0",
+  "version": "1.0.0",
   "description": "Enterprise-grade AI Cybersecurity & Vulnerability Auditor for Web Applications, APIs, and Repositories.",
   "type": "module",
   "main": "dist/index.js",

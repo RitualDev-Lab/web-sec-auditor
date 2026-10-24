@@ -1,0 +1,60 @@
+name: WebSecAuditor Enterprise Security Gate
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  schedule:
+    - cron: '0 6 * * 1' # Weekly Monday 06:00 UTC
+
+jobs:
+  security-audit:
+    name: Multi-Vector Cybersecurity Audit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full history for secret hunting
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Auditor
+        run: pnpm run build
+
+      - name: Run WebSecAuditor Unified Security Gate
+        run: |
+          node dist/cli.js audit . \
+            --sarif results.sarif \
+            --html report.html \
+            --fail-on HIGH
+
+      - name: Upload SARIF to GitHub Advanced Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
+          category: web-sec-auditor
+
+      - name: Archive HTML Executive Dashboard
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-sec-auditor-report
+          path: report.html
