@@ -232,15 +232,5 @@ jobs:
 
 ---
 
-## 🗺️ Project Roadmap & Status
-
-- [x] **Phase 1: Live DAST Probe, Transport Security & Network Hygiene** (Completed ✅)
-- [x] **Phase 2: High-Performance SAST Engine & OWASP Top 10 Ruleset** (Completed ✅)
-- [x] **Phase 3: High-Entropy Secret Hunter & SCA Dependency Auditor** (Completed ✅)
-- [x] **Phase 4: AI Exploit Verification, CVSS v3.1 Scoring & Auto-Patch Engine** (Completed ✅)
-- [x] **Phase 5: Enterprise Reporting, SARIF v2.1.0, MCP Protocol & CI/CD Action** (Completed ✅)
-
----
-
 ## 📄 License
 MIT © [RitualDev Lab](https://github.com/RitualDev-Lab)
