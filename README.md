@@ -11,8 +11,9 @@
 [![OWASP Top 10](https://img.shields.io/badge/OWASP-Top%2010%20Compliant-red.svg)](https://owasp.org/www-project-top-ten/)
 [![SARIF v2.1.0](https://img.shields.io/badge/SARIF-v2.1.0%20Export-blueviolet.svg)](https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html)
 [![MCP Protocol](https://img.shields.io/badge/MCP-Native%20Server-brightgreen.svg)](https://modelcontextprotocol.io/)
+[![GitHub App](https://img.shields.io/badge/GitHub%20App-PR%20Bot%20%26%20Auto--Patch-orange.svg)](https://github.com/RitualDev-Lab/web-sec-auditor)
 
-*Unified DAST + SAST + Secret Hunter + SCA + Auto-Patch engine with OASIS SARIF v2.1.0 reporting, interactive HTML executive dashboards, and native Model Context Protocol (MCP) server support.*
+*Unified DAST + SAST + Secret Hunter + SCA + Auto-Patch engine with OASIS SARIF v2.1.0 reporting, interactive HTML executive dashboards, native Model Context Protocol (MCP) server, and Enterprise GitHub App Bot with 1-Click Auto-Patch PRs.*
 
 </div>
 
@@ -187,6 +188,42 @@ npx @ritualdev-lab/web-sec-auditor mcp
     }
   }
 }
+```
+
+---
+
+## 🤖 Enterprise GitHub App Bot & 1-Click Auto-Patch Engine
+
+WebSecAuditor includes a standalone GitHub App Bot service that monitors Pull Requests in real time, scans only modified lines via incremental unified diff parsing, and generates **1-click defensive patch PRs**:
+
+```
+Developer opens PR ──► GitHub Webhook (pull_request) ──► WebSecAuditor Bot
+                                                                │
+   ┌────────────────────────────────────────────────────────────┴───────────────────────────────────────┐
+   ▼                                                                                                    ▼
+GitHub Checks API (Pass / Fail Gate)                                                 Pull Request Review Table
+• In-progress Check Run created                                                      • CVSS v3.1 and OWASP breakdown
+• Inline file annotations on vulnerable lines                                        • 💡 1-Click Patch Callout
+                                                                                                │
+                                                       Developer comments: "@web-sec-auditor fix" ──────┘
+                                                                │
+                                                                ▼
+                                                Automated Auto-Patch Engine
+                                                • Branches: web-sec-auditor/fix-pr-42-<timestamp>
+                                                • Commits parameterized SQL, sanitized XSS, upgraded deps
+                                                • Opens ready-to-merge fix PR targeting contributor's branch!
+```
+
+### Starting the Webhook Listener Service
+```bash
+# Start webhook server on port 3000 with HMAC signature verification & auto-patching enabled
+web-sec-auditor bot --port 3000 --secret $WEBHOOK_SECRET --auto-patch --fail-on HIGH
+```
+
+### Direct Pull Request Scanning in CI/CD Workflows
+```bash
+# Audit specific PR diff and fail if critical or high vulnerabilities are detected
+web-sec-auditor pr-scan --owner RitualDev-Lab --repo backend --pr 42 --token $GITHUB_TOKEN --fail-on HIGH
 ```
 
 ---

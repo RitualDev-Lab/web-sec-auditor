@@ -1,6 +1,13 @@
 #!/usr/bin/env node
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import {
+  BotServer,
+  type BotSeverityGate,
+  GitHubClient,
+  PrDiffScanner,
+  PrPatcher,
+} from "./bot/index.js";
 import { DastScanner } from "./dast/index.js";
 import { startMcpServer } from "./mcp/index.js";
 import { PatchEngine } from "./patch/index.js";
@@ -18,7 +25,7 @@ import type {
   SupportedLanguage,
 } from "./types/index.js";
 
-const VERSION = "1.0.0";
+const VERSION = "1.1.0";
 
 const HELP_TEXT = `
   🛡️  WebSecAuditor - Enterprise AI Web Cybersecurity Auditor v${VERSION}
@@ -36,6 +43,8 @@ const HELP_TEXT = `
     scan-secrets <path>   Hunt for leaked API keys and high-entropy credentials
     scan-deps <path>      Audit third-party dependencies for known CVEs (SCA via OSV)
     patch <file>          Apply an automated remediation patch to a vulnerable line
+    bot                   Start GitHub App webhook listener server for automated PR audits
+    pr-scan               Audit a Pull Request diff directly (for GitHub Actions / CI)
     mcp                   Start Model Context Protocol (MCP) server over stdio
     status                Display auditor capabilities and supported security checks
     help                  Display this help message
@@ -55,12 +64,23 @@ const HELP_TEXT = `
     --line <number>             Target line number for patch command
     --rule <ruleId>             Rule ID for patch command (e.g. SEC-INJ-SQLI)
     --dry-run                   Preview patch unified diff without modifying file on disk
+    --port <number>             Port for bot webhook listener (default: 3000)
+    --secret <secret>           Webhook HMAC secret (or env WEBHOOK_SECRET)
+    --token <token>             GitHub Token (or env GITHUB_TOKEN)
+    --app-id <id>               GitHub App ID (or env GITHUB_APP_ID)
+    --private-key <pem>         GitHub App Private Key PEM string or path
+    --pr <number>               Pull request number for pr-scan command
+    --owner <owner>             Repository owner for pr-scan command
+    --repo <repo>               Repository name for pr-scan command
+    --auto-patch                Automatically open remediation PR for critical findings
     --no-cert                   Skip raw TLS peer certificate handshake inspection
     --version, -v               Display version
     --help, -h                  Display help
 
   EXAMPLES:
     web-sec-auditor audit . --sarif report.sarif --html report.html --fail-on HIGH
+    web-sec-auditor bot --port 3000 --auto-patch
+    web-sec-auditor pr-scan --owner acme --repo backend --pr 42 --fail-on HIGH
     web-sec-auditor scan-url https://example.com
     web-sec-auditor scan-code ./src --threshold HIGH --diff
     web-sec-auditor scan-secrets . --git-history
@@ -696,6 +716,149 @@ ${recipe.diff}
       break;
     }
 
+    case "bot": {
+      const portIdx = args.indexOf("--port");
+      const port =
+        portIdx !== -1
+          ? Number.parseInt(args[portIdx + 1], 10)
+          : Number.parseInt(process.env.PORT || "3000", 10);
+
+      const secretIdx = args.indexOf("--secret");
+      const webhookSecret = secretIdx !== -1 ? args[secretIdx + 1] : process.env.WEBHOOK_SECRET;
+
+      const tokenIdx = args.indexOf("--token");
+      const githubToken = tokenIdx !== -1 ? args[tokenIdx + 1] : process.env.GITHUB_TOKEN;
+
+      const appIdIdx = args.indexOf("--app-id");
+      const appId = appIdIdx !== -1 ? args[appIdIdx + 1] : process.env.GITHUB_APP_ID;
+
+      const privKeyIdx = args.indexOf("--private-key");
+      let privateKey =
+        privKeyIdx !== -1 ? args[privKeyIdx + 1] : process.env.GITHUB_APP_PRIVATE_KEY;
+
+      if (
+        privateKey &&
+        !privateKey.includes("BEGIN RSA PRIVATE KEY") &&
+        !privateKey.includes("BEGIN PRIVATE KEY")
+      ) {
+        try {
+          privateKey = await fs.readFile(path.resolve(privateKey), "utf-8");
+        } catch {
+          // Keep raw value
+        }
+      }
+
+      const autoPatch =
+        args.includes("--auto-patch") || process.env.AUTO_PATCH_ON_CRITICAL === "true";
+
+      const server = new BotServer({
+        port,
+        webhookSecret,
+        githubToken,
+        appId,
+        privateKey,
+        autoPatchOnCritical: autoPatch,
+        failOnSeverity: (failOnLevel?.toUpperCase() as BotSeverityGate) || "HIGH",
+      });
+
+      const actualPort = await server.listen(port);
+      console.log(`
+🛡️  WebSecAuditor GitHub App Bot & Automated PR Scanner
+─────────────────────────────────────────────────────────────
+Status:          LISTENING on port ${actualPort}
+Webhook URL:     http://localhost:${actualPort}/webhook
+Health Check:    http://localhost:${actualPort}/health
+Severity Gate:   ${failOnLevel ? failOnLevel.toUpperCase() : "HIGH"}
+Auto-Patch PR:   ${autoPatch ? "ENABLED (1-Click fix PRs enabled)" : "DISABLED"}
+HMAC Auth:       ${webhookSecret ? "ENABLED" : "DISABLED (Secret missing)"}
+─────────────────────────────────────────────────────────────
+Waiting for pull_request and issue_comment webhook events...
+`);
+      break;
+    }
+
+    case "pr-scan": {
+      const prIdx = args.indexOf("--pr");
+      const prNumber = prIdx !== -1 ? Number.parseInt(args[prIdx + 1], 10) : undefined;
+
+      const ownerIdx = args.indexOf("--owner");
+      const owner = ownerIdx !== -1 ? args[ownerIdx + 1] : undefined;
+
+      const repoIdx = args.indexOf("--repo");
+      const repo = repoIdx !== -1 ? args[repoIdx + 1] : undefined;
+
+      const tokenIdx = args.indexOf("--token");
+      const token = tokenIdx !== -1 ? args[tokenIdx + 1] : process.env.GITHUB_TOKEN;
+
+      const diffIdx = args.indexOf("--diff-file");
+      const diffFile = diffIdx !== -1 ? args[diffIdx + 1] : undefined;
+
+      if (!diffFile && (!prNumber || !owner || !repo)) {
+        console.error(
+          "❌ pr-scan requires either --diff-file <path> OR (--owner <o> --repo <r> --pr <num>)",
+        );
+        process.exit(1);
+      }
+
+      const autoPatch = args.includes("--auto-patch");
+      const failGate = (failOnLevel?.toUpperCase() as BotSeverityGate) || "HIGH";
+
+      let diffText = "";
+      const scanFiles: Array<{ path: string; content: string }> = [];
+
+      if (diffFile) {
+        diffText = await fs.readFile(path.resolve(diffFile), "utf-8");
+      } else if (owner && repo && prNumber && token) {
+        const client = new GitHubClient({ githubToken: token });
+        diffText = await client.getPullRequestDiff(owner, repo, prNumber);
+      }
+
+      const { parseUnifiedDiff } = await import("./bot/diff.js");
+      const parsed = parseUnifiedDiff(diffText);
+      for (const f of parsed) {
+        if (f.status === "deleted") continue;
+        const filePath = f.newPath || f.oldPath;
+        try {
+          const content = await fs.readFile(path.resolve(filePath), "utf-8");
+          scanFiles.push({ path: filePath, content });
+        } catch {
+          // File not present in local workspace
+        }
+      }
+
+      const scanner = new PrDiffScanner();
+      const summary = await scanner.scanDiff(scanFiles, diffText, {
+        owner,
+        repo,
+        prNumber,
+        failOnSeverity: failGate,
+      });
+
+      console.log(scanner.generateMarkdownReview(summary));
+
+      if (autoPatch && summary.patchableCount > 0) {
+        console.log(`\n⚡ Applying ${summary.patchableCount} automated security patches...`);
+        const patcher = new PrPatcher();
+        const { patchedFilesMap, recipesApplied } = patcher.generatePatchedFiles(
+          scanFiles,
+          summary.findings,
+        );
+        for (const [fp, content] of patchedFilesMap.entries()) {
+          await fs.writeFile(path.resolve(fp), content, "utf-8");
+          console.log(`  ✅ Patched: ${fp}`);
+        }
+        console.log(`✨ Successfully remediated ${recipesApplied} vulnerabilities on disk!`);
+      }
+
+      if (!summary.passedGate) {
+        console.error(
+          `\n🚨 PR Security Gate Broken: Issues found matching or exceeding ${summary.failOnLevel}`,
+        );
+        process.exit(1);
+      }
+      break;
+    }
+
     case "status": {
       console.log(`
 🛡️  WebSecAuditor - Engine Capabilities
@@ -716,6 +879,8 @@ Engines:
   [Phase 5] Executive HTML Dashboard     - ACTIVE (Self-Contained Interactive Dashboard)
   [Phase 5] Universal MCP Server         - ACTIVE (Cursor, Claude Desktop, Antigravity)
   [Phase 5] CI/CD Break-Build Gate       - ACTIVE (--fail-on critical|high|medium|low)
+  [Enterprise] GitHub App Webhook Bot    - ACTIVE (Automated PR Scanning & Checks API)
+  [Enterprise] 1-Click Auto-Patch Engine - ACTIVE (Auto-Branching & Fix Pull Requests)
 `);
       break;
     }
