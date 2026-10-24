@@ -10,7 +10,7 @@
 [![Biome](https://img.shields.io/badge/Code%20Style-Biome-60a5fa.svg)](https://biomejs.dev)
 [![OWASP Top 10](https://img.shields.io/badge/OWASP-Top%2010%20Compliant-red.svg)](https://owasp.org/www-project-top-ten/)
 
-*Detect vulnerabilities, security header weaknesses, cookie misconfigurations, dangerous CORS policies, and transport gaps before attackers do.*
+*Detect vulnerabilities, security header weaknesses, cookie misconfigurations, dangerous CORS policies, code injection, broken crypto, and transport gaps before attackers do.*
 
 </div>
 
@@ -18,36 +18,46 @@
 
 ## ⚡ The Problem: Web Application Security Blindspots
 
-Modern web applications and APIs are frequently deployed with critical security misconfigurations:
-1. **Missing or Broken Headers**: Sites lacking `Content-Security-Policy` (CSP) or `Strict-Transport-Security` (HSTS) leave users vulnerable to Cross-Site Scripting (XSS) and SSL-stripping man-in-the-middle attacks.
-2. **Insecure Cookies**: Auth and session tokens set without `Secure`, `HttpOnly`, or `SameSite` flags expose sessions to client-side script theft and CSRF.
-3. **Dangerous CORS Policies**: Overly permissive wildcard origins (`*`) paired with credentials (`Access-Control-Allow-Credentials: true`) allow arbitrary external websites to make authenticated API requests.
-4. **Transport & Information Leaks**: Plaintext HTTP fallback, expiring TLS certificates, and detailed server version disclosure headers (`Server: Apache/2.4.41`, `X-Powered-By: Express`) hand attackers actionable exploit intelligence.
+Modern web applications and APIs are frequently deployed with critical security misconfigurations and vulnerabilities:
+1. **Source Code Vulnerabilities**: Raw string concatenations in database queries (SQLi), unsanitized inputs passed to child process execution (Command Injection), path traversals, and dynamic code evaluation (`eval`).
+2. **Cryptographic Failures**: Deprecated hash functions (MD5, SHA-1), JWTs allowing `none` algorithm verification, insecure pseudo-random generation for security tokens, and hardcoded fallback secrets.
+3. **Missing or Broken Headers**: Sites lacking `Content-Security-Policy` (CSP) or `Strict-Transport-Security` (HSTS) leave users vulnerable to Cross-Site Scripting (XSS) and SSL-stripping man-in-the-middle attacks.
+4. **Insecure Cookies & Storage**: Auth and session tokens set without `Secure`, `HttpOnly`, or `SameSite` flags or stored in browser `localStorage`.
+5. **Dangerous CORS Policies**: Overly permissive wildcard origins (`*`) paired with credentials (`Access-Control-Allow-Credentials: true`).
+6. **Transport & Information Leaks**: Plaintext HTTP fallback, expiring TLS certificates, and detailed server version disclosure headers (`Server: Apache/2.4.41`, `X-Powered-By: Express`).
 
-**`web-sec-auditor` evaluates your web applications against modern cybersecurity specifications, assigns a deterministic letter grade (`A+` to `F`), and provides exact, framework-specific remediation code.**
+**`web-sec-auditor` provides a unified DAST + SAST cybersecurity engine evaluating live endpoints and source code against OWASP Top 10, CWE Top 25, and enterprise compliance standards.**
 
 ---
 
-## 🚀 Key Capabilities (Phase 1: DAST & Transport Security)
+## 🚀 Key Capabilities
 
-- 🌐 **Live HTTP Security Header Probe**:
-  - Full evaluation of `Content-Security-Policy` (detecting `unsafe-inline`, `unsafe-eval`, wildcard sources, and insecure `http://` references).
-  - Strict enforcement of `Strict-Transport-Security` (HSTS `max-age`, `includeSubDomains`, `preload`).
-  - Clickjacking protection via `X-Frame-Options` and CSP `frame-ancestors`.
-  - MIME-sniffing prevention via `X-Content-Type-Options: nosniff`.
-  - Privacy preservation via `Referrer-Policy` and `Permissions-Policy`.
-- 🍪 **Cookie Flag & Hygiene Auditor**:
-  - Automatically identifies sensitive session and auth cookies (`session`, `jwt`, `token`, `auth`, `sid`).
-  - Verifies `Secure`, `HttpOnly`, and `SameSite` (`Lax`/`Strict`) directives.
-- 🔓 **CORS Misconfiguration Detection**:
-  - Detects high-risk combinations (`Access-Control-Allow-Origin: *` with credentials).
-  - Catches insecure `Origin: null` bypass vulnerabilities.
-- 🔒 **SSL/TLS & Certificate Inspector**:
-  - Inspects peer certificate validity, trusted CA issuer, and days remaining until expiration.
-  - Flags plaintext HTTP usage and verifies HTTPS redirect enforcement.
-- 🎛️ **Deterministic Security Scoring**:
-  - 0–100 numerical health score and industry standard letter grade (`A+`, `A`, `B`, `C`, `D`, `F`).
-  - Severity-capped risk thresholds: critical vulnerabilities cap maximum score at `F` (≤39).
+### 🔍 Static Application Security Testing (Phase 2: AST SAST Engine)
+- 💉 **Injection Flaws (OWASP A03 / CWE-89, CWE-78, CWE-22, CWE-79, CWE-95)**:
+  - **SQL / NoSQL Injection**: Flags unparameterized query concatenations and template literals.
+  - **OS Command Injection**: Detects `child_process.exec`, `execSync`, `os.system`, and `subprocess.Popen(..., shell=True)`.
+  - **Path Traversal**: Flags untrusted user input concatenated into filesystem calls (`fs.readFile`, `open`).
+  - **DOM-Based XSS**: Catches unsanitized assignments to `innerHTML`, `outerHTML`, and `document.write`.
+  - **Dynamic Code Execution**: Flags `eval()` and dynamic `new Function()` execution.
+- 🔐 **Cryptographic Failures (OWASP A02 / CWE-327, CWE-328, CWE-338, CWE-798)**:
+  - **Broken Hash Functions**: Catches collision-vulnerable algorithms (MD5, SHA-1).
+  - **JWT Signature Bypass**: Intercepts insecure token verification allowing the `'none'` algorithm.
+  - **Insecure Randomness**: Detects `Math.random()` or `random.random()` used in security-sensitive token contexts.
+  - **Fallback Secrets**: Flags hardcoded fallback strings in secret environment assignments.
+- 🛡️ **Auth & Access Control (OWASP A07 / CWE-922, CWE-532)**:
+  - **Token Storage Hygiene**: Flags storing JWTs or session secrets in `localStorage` or `sessionStorage`.
+  - **Credential Leak in Logs**: Flags printing passwords, secret keys, or raw auth bodies to logger streams.
+- 🌐 **SSRF & Security Misconfiguration (OWASP A05, A10 / CWE-918, CWE-295, CWE-489)**:
+  - **SSRF**: Flags direct unvalidated outbound HTTP calls using request parameters.
+  - **TLS Disabled**: Flags `rejectUnauthorized: false` or `NODE_TLS_REJECT_UNAUTHORIZED='0'`.
+  - **Debug Flags**: Catches production debug modes left enabled in code.
+
+### 🌐 Live Dynamic Testing (Phase 1: DAST & Transport Security)
+- **HTTP Security Header Probe**: CSP (`unsafe-inline`, `unsafe-eval`), HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy.
+- **Cookie Hygiene**: `Secure`, `HttpOnly`, `SameSite` attribute enforcement.
+- **CORS Misconfiguration**: Wildcard origins with credentials, `Origin: null` bypasses.
+- **Transport & TLS**: Certificate validity, expiration tracking, HTTPS redirect validation.
+- **Deterministic Scoring**: 0–100 health score with letter grade badges (`A+` to `F`).
 
 ---
 
@@ -55,11 +65,17 @@ Modern web applications and APIs are frequently deployed with critical security 
 
 ### 1. Global / One-Off CLI Execution
 ```bash
-# Run audit against any public or local URL
-npx @ritualdev-lab/web-sec-auditor scan-url https://example.com
+# Audit a local codebase or repository (SAST)
+npx @ritualdev-lab/web-sec-auditor scan-code ./src
 
-# Output structured JSON for automation and CI pipelines
-npx @ritualdev-lab/web-sec-auditor scan-url https://api.example.com --format json
+# Filter findings by minimum severity threshold
+npx @ritualdev-lab/web-sec-auditor scan-code . --threshold HIGH
+
+# Output JSON for CI/CD pipelines
+npx @ritualdev-lab/web-sec-auditor scan-code . --format json
+
+# Audit a live web application or API endpoint (DAST)
+npx @ritualdev-lab/web-sec-auditor scan-url https://example.com
 ```
 
 ### 2. Local Installation
@@ -73,8 +89,29 @@ npm install @ritualdev-lab/web-sec-auditor
 
 ## 💻 Programmatic Node.js SDK
 
-You can embed `DastScanner` directly into your automated test suites, CI checks, or background health workers:
+### SAST: Static Codebase Analysis
+```typescript
+import { SastScanner } from "@ritualdev-lab/web-sec-auditor";
 
+const scanner = new SastScanner();
+
+// Scan an entire repository or directory
+const report = await scanner.scanPath("./src", {
+  threshold: "HIGH",
+  languages: ["typescript", "javascript", "python", "go"],
+});
+
+console.log(`Files Scanned: ${report.filesScanned} in ${report.durationMs}ms`);
+console.log(`Critical Issues: ${report.summary.critical}`);
+
+for (const finding of report.findings) {
+  console.log(`[${finding.severity}] ${finding.title}`);
+  console.log(`  File: ${finding.file}:${finding.line}:${finding.column}`);
+  console.log(`  Remediation: ${finding.remediation}`);
+}
+```
+
+### DAST: Live Endpoint Analysis
 ```typescript
 import { DastScanner } from "@ritualdev-lab/web-sec-auditor";
 
@@ -87,59 +124,43 @@ const report = await scanner.scanUrl("https://my-saas-app.com");
 
 console.log(`Security Grade: ${report.grade} (Score: ${report.score}/100)`);
 console.log(`Total Findings: ${report.findings.length}`);
-
-for (const finding of report.findings) {
-  console.log(`[${finding.severity}] ${finding.title}`);
-  console.log(`  Remediation: ${finding.remediation}`);
-}
 ```
 
 ---
 
-## 🛡️ Example Terminal Output
+## 🛡️ Example SAST Terminal Output
 
 ```text
-🛡️  WebSecAuditor - Live DAST & Security Header Report
+🛡️  WebSecAuditor - Static Application Security Testing (SAST) Report
 ─────────────────────────────────────────────────────────────
-Target:       https://example.com
-Final URL:    https://example.com/
-Status Code:  200
-Latency:      142ms
-Scan Time:    2026-10-24T03:50:00.000Z
+Target Path:    /home/dev/my-project/src
+Files Scanned:  42
+Scan Duration:  48ms
+Scan Timestamp: 2026-10-24T04:00:00.000Z
 
-OVERALL GRADE: 🟡 B [MODERATE HARDENING NEEDED] (Score: 78/100)
-Summary:       0 Critical | 1 High | 1 Medium | 1 Low
+SUMMARY:
+  ⛔ Critical: 1
+  🔴 High:     2
+  🟠 Medium:   1
+  🟡 Low:      0
+  ℹ️  Info:     0
 ─────────────────────────────────────────────────────────────
 
-📋 HTTP Security Headers:
-  ❌ Content-Security-Policy      [MISSING]
-     • Issue: Content-Security-Policy header is missing.
-     💡 Fix: Implement a strict Content-Security-Policy.
-  ✅ Strict-Transport-Security   [OPTIMAL]
-  ✅ X-Frame-Options              [OPTIMAL]
-  ✅ X-Content-Type-Options       [OPTIMAL]
-  ⚠️ Referrer-Policy              [MISSING]
+🚨 Detected 4 Security Issue(s):
 
-🍪 Cookie Security Flags:
-  ✅ Cookie 'session_id': Secure=true, HttpOnly=true, SameSite=Lax
+  1. [⛔ CRITICAL] SQL / NoSQL Query String Interpolation (SEC-INJ-SQLI)
+     Location:    controllers/users.ts:24:18
+     Category:    INJECTION | CWE-89 | A03:2021-Injection
+     Snippet:     const q = "SELECT * FROM users WHERE email = '" + req.body.email + "'";
+     Description: Raw string interpolation or concatenation was detected inside a database query call.
+     Remediation: 💡 Use parameterized queries or ORM query builder methods.
 
-🌐 CORS Configuration:
-  Allowed Origin:      https://app.example.com
-  Allows Credentials:  YES
-  CORS Status:         SAFE
-
-🔒 Transport & TLS Posture:
-  HTTPS:               YES
-  Certificate Valid:   YES
-  Certificate Issuer:  Let's Encrypt
-  Days to Expiration:  64 days
-
-🚨 Identified Vulnerabilities & Remediation Roadmaps:
-
-  1. 🔴 [HIGH] Missing Content-Security-Policy (CSP)
-     ID:          SEC-HDR-CSP-MISSING (CWE-693)
-     Description: The web application does not enforce a Content-Security-Policy header.
-     Remediation: Define a strict Content-Security-Policy header restricting script-src, object-src, and default-src.
+  2. [🔴 HIGH] Hardcoded Cryptographic Fallback Secret (SEC-CRYP-FALLBACK-SECRET)
+     Location:    config/jwt.ts:8:32
+     Category:    AUTH | CWE-798 | A07:2021-Identification and Authentication Failures
+     Snippet:     const secret = process.env.JWT_SECRET || "dev_secret_key_123";
+     Description: A hardcoded fallback default secret was detected in environment variable assignment.
+     Remediation: 💡 Throw a startup configuration error if the secret environment variable is missing.
 ```
 
 ---
@@ -153,10 +174,13 @@ Summary:       0 Critical | 1 High | 1 Medium | 1 Low
   - SSL/TLS certificate inspector & validity checker
   - Security scoring engine (0–100) with letter grading (`A+` to `F`)
   - CLI binary: `web-sec-auditor scan-url <url>`
-- [ ] **Phase 2: High-Performance SAST Engine & OWASP Top 10 Ruleset**
-  - AST syntax visitor for TypeScript, JavaScript, Python, and Go
-  - Injection detection (SQLi, NoSQLi, OS Command, Path Traversal, DOM-XSS)
-  - Broken Access Control & IDOR / BOLA route parameter validator
+- [x] **Phase 2: High-Performance SAST Engine & OWASP Top 10 Ruleset**
+  - Multi-language SAST visitor (TypeScript, JavaScript, Python, Go)
+  - Injection rules (SQLi, OS Command, Path Traversal, DOM-XSS, Eval)
+  - Cryptographic weakness rules (Weak hash, JWT Alg None, Insecure Random, Fallback Secret)
+  - Authentication hygiene (Web storage tokens, password logging)
+  - SSRF & security misconfigurations (Unvalidated requests, TLS disabled, Debug mode)
+  - Severity-based threshold filtering (`CRITICAL`, `HIGH`, `MEDIUM`, `LOW`)
   - CLI binary: `web-sec-auditor scan-code <path>`
 - [ ] **Phase 3: High-Entropy Secret Hunter & SCA Dependency Auditor**
   - Shannon entropy secret scanner for AWS, OpenAI, Gemini, Stripe, and private keys

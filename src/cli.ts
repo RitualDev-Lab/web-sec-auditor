@@ -1,33 +1,44 @@
 #!/usr/bin/env node
 import { DastScanner } from "./dast/index.js";
-import type { DastScanReport, SecurityGrade } from "./types/index.js";
+import { SastScanner } from "./sast/index.js";
+import type {
+  DastScanReport,
+  FindingSeverity,
+  SastScanReport,
+  SecurityGrade,
+  SupportedLanguage,
+} from "./types/index.js";
 
-const VERSION = "0.1.0";
+const VERSION = "0.2.0";
 
 const HELP_TEXT = `
   🛡️  WebSecAuditor - Enterprise AI Web Cybersecurity Auditor v${VERSION}
   ─────────────────────────────────────────────────────────────
   Multi-vector security auditor detecting vulnerabilities, misconfigurations,
-  and transport weaknesses across web applications and APIs.
+  and transport weaknesses across web applications and source codebases.
 
   USAGE:
     web-sec-auditor [command] [options]
 
   COMMANDS:
-    scan-url <url>   Audit a live web application or API endpoint (DAST & Headers)
-    status           Display auditor capabilities and supported security checks
-    help             Display this help message
+    scan-url <url>      Audit a live web application or API endpoint (DAST & Headers)
+    scan-code <path>    Audit local source code or repository (SAST & OWASP Top 10)
+    status              Display auditor capabilities and supported security checks
+    help                Display this help message
 
   OPTIONS:
-    --format <text|json>  Output format (default: text)
-    --timeout <ms>        Request timeout in milliseconds (default: 10000)
-    --no-cert             Skip raw TLS peer certificate handshake inspection
-    --version, -v         Display version
-    --help, -h            Display help
+    --format <text|json>        Output format (default: text)
+    --threshold <level>         Minimum severity (CRITICAL, HIGH, MEDIUM, LOW, INFO)
+    --timeout <ms>              Request timeout in milliseconds (default: 10000)
+    --languages <lang1,lang2>   Filter languages (typescript, javascript, python, go)
+    --no-cert                   Skip raw TLS peer certificate handshake inspection
+    --version, -v               Display version
+    --help, -h                  Display help
 
   EXAMPLES:
     web-sec-auditor scan-url https://example.com
-    web-sec-auditor scan-url https://api.example.com --format json
+    web-sec-auditor scan-code ./src --threshold HIGH
+    web-sec-auditor scan-code . --format json
 `;
 
 function getGradeBadge(grade: SecurityGrade): string {
@@ -142,6 +153,54 @@ Summary:       ${report.summary.critical} Critical | ${report.summary.high} High
   return lines.join("\n");
 }
 
+function renderSastTextReport(report: SastScanReport): string {
+  const lines: string[] = [];
+
+  lines.push(`
+🛡️  WebSecAuditor - Static Application Security Testing (SAST) Report
+─────────────────────────────────────────────────────────────
+Target Path:    ${report.targetPath}
+Files Scanned:  ${report.filesScanned}
+Scan Duration:  ${report.durationMs}ms
+Scan Timestamp: ${report.scanTimestamp}
+
+SUMMARY:
+  ⛔ Critical: ${report.summary.critical}
+  🔴 High:     ${report.summary.high}
+  🟠 Medium:   ${report.summary.medium}
+  🟡 Low:      ${report.summary.low}
+  ℹ️  Info:     ${report.summary.info}
+─────────────────────────────────────────────────────────────
+`);
+
+  if (report.findings.length === 0) {
+    lines.push("🎉 Clean scan! No security vulnerabilities identified in codebase.");
+    return lines.join("\n");
+  }
+
+  lines.push(`🚨 Detected ${report.findings.length} Security Issue(s):\n`);
+
+  report.findings.forEach((f, idx) => {
+    const sevBadge =
+      f.severity === "CRITICAL"
+        ? "⛔ CRITICAL"
+        : f.severity === "HIGH"
+          ? "🔴 HIGH"
+          : f.severity === "MEDIUM"
+            ? "🟠 MEDIUM"
+            : "🟡 LOW";
+
+    lines.push(`  ${idx + 1}. [${sevBadge}] ${f.title} (${f.ruleId})`);
+    lines.push(`     Location:    ${f.file}:${f.line}:${f.column}`);
+    lines.push(`     Category:    ${f.category} | ${f.cwe} | ${f.owasp}`);
+    lines.push(`     Snippet:     ${f.snippet}`);
+    lines.push(`     Description: ${f.description}`);
+    lines.push(`     Remediation: 💡 ${f.remediation}\n`);
+  });
+
+  return lines.join("\n");
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const command = args[0] || "help";
@@ -190,6 +249,42 @@ async function main() {
       break;
     }
 
+    case "scan-code": {
+      const targetPath = args[1] || ".";
+
+      const formatIdx = args.indexOf("--format");
+      const format = formatIdx !== -1 && args[formatIdx + 1] ? args[formatIdx + 1] : "text";
+
+      const threshIdx = args.indexOf("--threshold");
+      const threshold = (
+        threshIdx !== -1 && args[threshIdx + 1] ? args[threshIdx + 1].toUpperCase() : undefined
+      ) as FindingSeverity | undefined;
+
+      const langIdx = args.indexOf("--languages");
+      const languages =
+        langIdx !== -1 && args[langIdx + 1]
+          ? (args[langIdx + 1].split(",") as SupportedLanguage[])
+          : undefined;
+
+      const scanner = new SastScanner();
+      try {
+        const report = await scanner.scanPath(targetPath, {
+          threshold,
+          languages,
+        });
+
+        if (format === "json") {
+          console.log(JSON.stringify(report, null, 2));
+        } else {
+          console.log(renderSastTextReport(report));
+        }
+      } catch (err) {
+        console.error(`❌ SAST scan failed for path '${targetPath}': ${(err as Error).message}`);
+        process.exit(1);
+      }
+      break;
+    }
+
     case "status": {
       console.log(`
 🛡️  WebSecAuditor - Engine Capabilities
@@ -199,7 +294,8 @@ Engines:
   [Phase 1] DAST & Live Header Probe     - ACTIVE
   [Phase 1] Cookie & CORS Auditor        - ACTIVE
   [Phase 1] TLS & Transport Inspector    - ACTIVE
-  [Phase 2] AST-Level SAST Engine        - PLANNED
+  [Phase 2] AST-Level SAST Engine        - ACTIVE
+  [Phase 2] OWASP Top 10 Rules Registry  - ACTIVE (SQLi, CMD, XSS, SSRF, Crypto, Auth)
   [Phase 3] High-Entropy Secret Hunter   - PLANNED
   [Phase 4] AI Exploit PoC & Auto-Patch  - PLANNED
   [Phase 5] SARIF v2.1.0 & MCP Server    - PLANNED

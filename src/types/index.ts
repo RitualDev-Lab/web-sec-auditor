@@ -98,3 +98,63 @@ export interface DastScanOptions {
   checkTlsCert?: boolean;
   customHeaders?: Record<string, string>;
 }
+
+export type SupportedLanguage = "typescript" | "javascript" | "python" | "go" | "all";
+
+export interface RuleMatch {
+  line: number;
+  column: number;
+  snippet: string;
+  evidence?: string;
+}
+
+export interface SastRule {
+  id: string;
+  name: string;
+  category: FindingCategory;
+  severity: FindingSeverity;
+  cwe: string;
+  owasp: string;
+  description: string;
+  remediation: string;
+  languages: SupportedLanguage[];
+  evaluate(content: string, filePath: string): RuleMatch[];
+}
+
+export interface SastFinding {
+  id: string;
+  ruleId: string;
+  category: FindingCategory;
+  title: string;
+  severity: FindingSeverity;
+  cwe: string;
+  owasp: string;
+  file: string;
+  line: number;
+  column: number;
+  snippet: string;
+  description: string;
+  remediation: string;
+}
+
+export interface SastScanReport {
+  targetPath: string;
+  filesScanned: number;
+  scanTimestamp: string;
+  durationMs: number;
+  summary: {
+    critical: number;
+    high: number;
+    medium: number;
+    low: number;
+    info: number;
+  };
+  findings: SastFinding[];
+}
+
+export interface SastScanOptions {
+  threshold?: FindingSeverity;
+  languages?: SupportedLanguage[];
+  excludeDirs?: string[];
+  maxFileSizeKb?: number;
+}
