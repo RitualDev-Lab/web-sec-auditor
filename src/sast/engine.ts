@@ -1,5 +1,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import { DEFAULT_CVSS_MAP, calculateCvssV31, getComplianceMapping } from "../compliance/index.js";
+import { PatchEngine } from "../patch/index.js";
 import type {
   FindingSeverity,
   SastFinding,
@@ -35,9 +37,11 @@ const SEVERITY_ORDER: Record<FindingSeverity, number> = {
 
 export class SastScanner {
   private registry: RuleRegistry;
+  private patchEngine: PatchEngine;
 
   constructor(registry: RuleRegistry = new RuleRegistry()) {
     this.registry = registry;
+    this.patchEngine = new PatchEngine();
   }
 
   /**
@@ -59,6 +63,29 @@ export class SastScanner {
     for (const rule of rules) {
       const matches = rule.evaluate(content, filePath);
       for (const match of matches) {
+        // Compute CVSS v3.1 metrics
+        const cvssVector = DEFAULT_CVSS_MAP[rule.id];
+        const cvss = cvssVector ? calculateCvssV31(cvssVector) : undefined;
+
+        // Lookup compliance mappings (PCI-DSS, SOC 2, CWE Top 25)
+        const comp = getComplianceMapping(rule.cwe || rule.id);
+        const compliance = comp
+          ? {
+              cweTop25Rank: comp.cweTop25Rank,
+              pciDss: comp.pciDssV4,
+              soc2: comp.soc2,
+            }
+          : undefined;
+
+        // Generate automated remediation patch recipe
+        const patchRecipe = this.patchEngine.generatePatch(filePath, content, match.line, rule.id);
+        const patch = patchRecipe
+          ? {
+              diff: patchRecipe.diff,
+              explanation: patchRecipe.explanation,
+            }
+          : undefined;
+
         findings.push({
           id: `${rule.id}-${path.basename(filePath)}-L${match.line}`,
           ruleId: rule.id,
@@ -73,6 +100,10 @@ export class SastScanner {
           snippet: match.snippet,
           description: rule.description,
           remediation: rule.remediation,
+          cvssScore: cvss?.baseScore,
+          cvssVector: cvss?.vectorString,
+          compliance,
+          patch,
         });
       }
     }

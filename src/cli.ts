@@ -1,5 +1,8 @@
 #!/usr/bin/env node
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
 import { DastScanner } from "./dast/index.js";
+import { PatchEngine } from "./patch/index.js";
 import { SastScanner } from "./sast/index.js";
 import { ScaScanner } from "./sca/index.js";
 import { SecretHunter } from "./secrets/index.js";
@@ -13,13 +16,13 @@ import type {
   SupportedLanguage,
 } from "./types/index.js";
 
-const VERSION = "0.3.0";
+const VERSION = "0.4.0";
 
 const HELP_TEXT = `
   🛡️  WebSecAuditor - Enterprise AI Web Cybersecurity Auditor v${VERSION}
   ─────────────────────────────────────────────────────────────
   Multi-vector security auditor detecting vulnerabilities, misconfigurations,
-  credential leaks, and third-party dependency CVEs across web stacks.
+  credential leaks, CVSS v3.1 risks, and compliance gaps across web stacks.
 
   USAGE:
     web-sec-auditor [command] [options]
@@ -29,6 +32,7 @@ const HELP_TEXT = `
     scan-code <path>      Audit local source code or repository (SAST & OWASP Top 10)
     scan-secrets <path>   Hunt for leaked API keys and high-entropy credentials
     scan-deps <path>      Audit third-party dependencies for known CVEs (SCA via OSV)
+    patch <file>          Apply an automated remediation patch to a vulnerable line
     status                Display auditor capabilities and supported security checks
     help                  Display this help message
 
@@ -40,15 +44,20 @@ const HELP_TEXT = `
     --min-entropy <float>       Minimum Shannon entropy threshold for secret hunter (default: 3.5)
     --git-history               Scan git commit diff history for deleted/historical secrets
     --dev                       Include devDependencies in SCA dependency scan
+    --diff                      Display unified git diff auto-patch recipes in scan reports
+    --line <number>             Target line number for patch command
+    --rule <ruleId>             Rule ID for patch command (e.g. SEC-INJ-SQLI)
+    --dry-run                   Preview patch unified diff without modifying file on disk
     --no-cert                   Skip raw TLS peer certificate handshake inspection
     --version, -v               Display version
     --help, -h                  Display help
 
   EXAMPLES:
     web-sec-auditor scan-url https://example.com
-    web-sec-auditor scan-code ./src --threshold HIGH
+    web-sec-auditor scan-code ./src --threshold HIGH --diff
     web-sec-auditor scan-secrets . --git-history
     web-sec-auditor scan-deps . --dev
+    web-sec-auditor patch ./src/user.ts --line 42 --rule SEC-INJ-SQLI
 `;
 
 function getGradeBadge(grade: SecurityGrade): string {
@@ -163,7 +172,7 @@ Summary:       ${report.summary.critical} Critical | ${report.summary.high} High
   return lines.join("\n");
 }
 
-function renderSastTextReport(report: SastScanReport): string {
+function renderSastTextReport(report: SastScanReport, showDiff = false): string {
   const lines: string[] = [];
 
   lines.push(`
@@ -203,9 +212,27 @@ SUMMARY:
     lines.push(`  ${idx + 1}. [${sevBadge}] ${f.title} (${f.ruleId})`);
     lines.push(`     Location:    ${f.file}:${f.line}:${f.column}`);
     lines.push(`     Category:    ${f.category} | ${f.cwe} | ${f.owasp}`);
+    if (f.cvssScore) {
+      lines.push(`     CVSS v3.1:   Score ${f.cvssScore} (${f.cvssVector})`);
+    }
+    if (f.compliance) {
+      const parts: string[] = [];
+      if (f.compliance.cweTop25Rank) parts.push(`CWE Top 25 (#${f.compliance.cweTop25Rank})`);
+      if (f.compliance.pciDss?.length) parts.push(`PCI-DSS: ${f.compliance.pciDss[0]}`);
+      if (f.compliance.soc2?.length) parts.push(`SOC 2: ${f.compliance.soc2[0]}`);
+      lines.push(`     Compliance:  ${parts.join(" | ")}`);
+    }
     lines.push(`     Snippet:     ${f.snippet}`);
     lines.push(`     Description: ${f.description}`);
-    lines.push(`     Remediation: 💡 ${f.remediation}\n`);
+    lines.push(`     Remediation: 💡 ${f.remediation}`);
+
+    if (showDiff && f.patch?.diff) {
+      lines.push("\n     📝 Auto-Patch Preview (Unified Diff):");
+      for (const dLine of f.patch.diff.split("\n")) {
+        lines.push(`        ${dLine}`);
+      }
+    }
+    lines.push("");
   });
 
   return lines.join("\n");
@@ -374,6 +401,8 @@ async function main() {
           ? (args[langIdx + 1].split(",") as SupportedLanguage[])
           : undefined;
 
+      const showDiff = args.includes("--diff");
+
       const scanner = new SastScanner();
       try {
         const report = await scanner.scanPath(targetPath, {
@@ -384,7 +413,7 @@ async function main() {
         if (format === "json") {
           console.log(JSON.stringify(report, null, 2));
         } else {
-          console.log(renderSastTextReport(report));
+          console.log(renderSastTextReport(report, showDiff));
         }
       } catch (err) {
         console.error(`❌ SAST scan failed for path '${targetPath}': ${(err as Error).message}`);
@@ -457,6 +486,63 @@ async function main() {
       break;
     }
 
+    case "patch": {
+      const targetFile = args[1];
+      if (!targetFile) {
+        console.error(
+          "❌ Error: Target file path is required.\nUsage: web-sec-auditor patch <file> --line <number> --rule <ruleId>",
+        );
+        process.exit(1);
+      }
+
+      const lineIdx = args.indexOf("--line");
+      const lineNumber =
+        lineIdx !== -1 && args[lineIdx + 1] ? Number.parseInt(args[lineIdx + 1], 10) : undefined;
+
+      const ruleIdx = args.indexOf("--rule");
+      const ruleId = ruleIdx !== -1 ? args[ruleIdx + 1] : undefined;
+
+      if (!lineNumber || !ruleId) {
+        console.error("❌ Error: Both --line <number> and --rule <ruleId> are required.");
+        process.exit(1);
+      }
+
+      const dryRun = args.includes("--dry-run");
+
+      try {
+        const resolved = path.resolve(targetFile);
+        const content = await fs.readFile(resolved, "utf-8");
+        const patchEngine = new PatchEngine();
+        const recipe = patchEngine.generatePatch(resolved, content, lineNumber, ruleId);
+
+        if (!recipe) {
+          console.log(
+            `ℹ️  No automatic remediation recipe available for rule '${ruleId}' at line ${lineNumber}.`,
+          );
+          process.exit(0);
+        }
+
+        console.log(`
+🛠️  Auto-Patch Generated for ${targetFile}:${lineNumber} (${ruleId}):
+─────────────────────────────────────────────────────────────
+${recipe.diff}
+─────────────────────────────────────────────────────────────
+💡 Explanation: ${recipe.explanation}
+`);
+
+        if (!dryRun) {
+          await patchEngine.applyPatch(recipe);
+          console.log(`✅ Patch applied successfully to ${targetFile}!`);
+        } else {
+          console.log("ℹ️  Dry-run mode: file was not modified.");
+        }
+      } catch (err) {
+        console.error(`❌ Patch application failed: ${(err as Error).message}`);
+        process.exit(1);
+      }
+      break;
+    }
+
     case "status": {
       console.log(`
 🛡️  WebSecAuditor - Engine Capabilities
@@ -470,7 +556,9 @@ Engines:
   [Phase 2] OWASP Top 10 Rules Registry  - ACTIVE (SQLi, CMD, XSS, SSRF, Crypto, Auth)
   [Phase 3] High-Entropy Secret Hunter   - ACTIVE (AWS, GCP, OpenAI, Claude, Stripe, GitHub, Private Keys)
   [Phase 3] SCA Dependency Auditor (OSV) - ACTIVE (CVE & GHSA Security Advisories)
-  [Phase 4] AI Exploit PoC & Auto-Patch  - PLANNED
+  [Phase 4] CVSS v3.1 Scoring Engine     - ACTIVE (Base Score, Impact, Exploitability, Vectors)
+  [Phase 4] Compliance Mapping Engine    - ACTIVE (OWASP, PCI-DSS v4.0, SOC 2, CWE Top 25)
+  [Phase 4] Automated Code Patch Engine  - ACTIVE (Unified Git Diff & Direct Remediation)
   [Phase 5] SARIF v2.1.0 & MCP Server    - PLANNED
 `);
       break;

@@ -135,6 +135,17 @@ export interface SastFinding {
   snippet: string;
   description: string;
   remediation: string;
+  cvssScore?: number;
+  cvssVector?: string;
+  compliance?: {
+    cweTop25Rank?: number;
+    pciDss?: string[];
+    soc2?: string[];
+  };
+  patch?: {
+    diff: string;
+    explanation: string;
+  };
 }
 
 export interface SastScanReport {
