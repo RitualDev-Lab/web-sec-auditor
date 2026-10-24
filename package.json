@@ -1,0 +1,58 @@
+{
+  "name": "@ritualdev-lab/web-sec-auditor",
+  "version": "0.1.0",
+  "description": "Enterprise-grade AI Cybersecurity & Vulnerability Auditor for Web Applications, APIs, and Repositories.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "web-sec-auditor": "dist/cli.js"
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepack": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/cli.js",
+    "test": "tsx --test \"tests/**/*.test.ts\"",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "check": "biome check ."
+  },
+  "keywords": [
+    "cybersecurity",
+    "security-auditor",
+    "dast",
+    "sast",
+    "owasp",
+    "vulnerability-scanner",
+    "mcp",
+    "security-headers",
+    "secret-scanner",
+    "sarif",
+    "api-security"
+  ],
+  "author": "RitualDev Lab",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RitualDev-Lab/web-sec-auditor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/RitualDev-Lab/web-sec-auditor/issues"
+  },
+  "homepage": "https://github.com/RitualDev-Lab/web-sec-auditor#readme",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.6.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^22.13.10",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}
