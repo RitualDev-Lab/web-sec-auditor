@@ -158,3 +158,101 @@ export interface SastScanOptions {
   excludeDirs?: string[];
   maxFileSizeKb?: number;
 }
+
+// ─── Phase 3: Secret Detection Types ─────────────────────────
+
+export interface SecretPattern {
+  id: string;
+  name: string;
+  category: "SECRETS";
+  severity: FindingSeverity;
+  description: string;
+  regex: RegExp;
+  minEntropy?: number;
+  mask(match: string): string;
+}
+
+export interface SecretFinding {
+  id: string;
+  patternId: string;
+  title: string;
+  severity: FindingSeverity;
+  file: string;
+  line: number;
+  column: number;
+  maskedSecret: string;
+  entropy: number;
+  snippet: string;
+  remediation: string;
+  commitHash?: string;
+  commitAuthor?: string;
+}
+
+export interface SecretScanReport {
+  targetPath: string;
+  filesScanned: number;
+  commitsScanned?: number;
+  scanTimestamp: string;
+  durationMs: number;
+  summary: {
+    critical: number;
+    high: number;
+    medium: number;
+    low: number;
+    info: number;
+  };
+  findings: SecretFinding[];
+}
+
+export interface SecretScanOptions {
+  minEntropy?: number;
+  scanGitHistory?: boolean;
+  maxCommits?: number;
+  excludeDirs?: string[];
+  maxFileSizeKb?: number;
+}
+
+// ─── Phase 3: Software Composition Analysis (SCA) Types ──────
+
+export interface PackageDependency {
+  name: string;
+  version: string;
+  isDev: boolean;
+}
+
+export interface ScaFinding {
+  id: string;
+  packageName: string;
+  currentVersion: string;
+  vulnerableRange?: string;
+  patchedVersion?: string;
+  severity: FindingSeverity;
+  cvssScore?: number;
+  title: string;
+  description: string;
+  advisoryUrl?: string;
+  remediation: string;
+}
+
+export interface ScaScanReport {
+  manifestPath: string;
+  ecosystem: string;
+  totalDependencies: number;
+  vulnerableDependencies: number;
+  scanTimestamp: string;
+  durationMs: number;
+  summary: {
+    critical: number;
+    high: number;
+    medium: number;
+    low: number;
+    info: number;
+  };
+  findings: ScaFinding[];
+}
+
+export interface ScaScanOptions {
+  includeDev?: boolean;
+  threshold?: FindingSeverity;
+  timeoutMs?: number;
+}

@@ -10,7 +10,7 @@
 [![Biome](https://img.shields.io/badge/Code%20Style-Biome-60a5fa.svg)](https://biomejs.dev)
 [![OWASP Top 10](https://img.shields.io/badge/OWASP-Top%2010%20Compliant-red.svg)](https://owasp.org/www-project-top-ten/)
 
-*Detect vulnerabilities, security header weaknesses, cookie misconfigurations, dangerous CORS policies, code injection, broken crypto, and transport gaps before attackers do.*
+*Detect vulnerabilities, security header weaknesses, cookie misconfigurations, code injection, exposed API keys, and third-party CVE dependencies before attackers do.*
 
 </div>
 
@@ -19,18 +19,40 @@
 ## ⚡ The Problem: Web Application Security Blindspots
 
 Modern web applications and APIs are frequently deployed with critical security misconfigurations and vulnerabilities:
-1. **Source Code Vulnerabilities**: Raw string concatenations in database queries (SQLi), unsanitized inputs passed to child process execution (Command Injection), path traversals, and dynamic code evaluation (`eval`).
-2. **Cryptographic Failures**: Deprecated hash functions (MD5, SHA-1), JWTs allowing `none` algorithm verification, insecure pseudo-random generation for security tokens, and hardcoded fallback secrets.
-3. **Missing or Broken Headers**: Sites lacking `Content-Security-Policy` (CSP) or `Strict-Transport-Security` (HSTS) leave users vulnerable to Cross-Site Scripting (XSS) and SSL-stripping man-in-the-middle attacks.
-4. **Insecure Cookies & Storage**: Auth and session tokens set without `Secure`, `HttpOnly`, or `SameSite` flags or stored in browser `localStorage`.
-5. **Dangerous CORS Policies**: Overly permissive wildcard origins (`*`) paired with credentials (`Access-Control-Allow-Credentials: true`).
-6. **Transport & Information Leaks**: Plaintext HTTP fallback, expiring TLS certificates, and detailed server version disclosure headers (`Server: Apache/2.4.41`, `X-Powered-By: Express`).
+1. **Exposed Secrets & API Keys**: Cloud credentials (AWS, GCP), LLM API keys (OpenAI, Anthropic), payment tokens (Stripe), database connection strings with passwords, and private keys hardcoded in repositories or commit histories.
+2. **Vulnerable Dependencies (SCA)**: Unpatched third-party npm packages harboring high-severity remote code execution, prototype pollution, or denial-of-service vulnerabilities (GHSA / CVE).
+3. **Source Code Vulnerabilities (SAST)**: Raw query concatenations (SQLi), command injection (`child_process.exec`), path traversals, DOM-XSS, and dynamic code evaluation (`eval`).
+4. **Cryptographic Failures**: Deprecated hash functions (MD5, SHA-1), JWTs allowing `none` algorithm verification, and insecure pseudo-random generation.
+5. **Transport & Header Blindspots (DAST)**: Missing `Content-Security-Policy`, insecure cookies without `Secure`/`HttpOnly`/`SameSite`, dangerous wildcard CORS with credentials, and plaintext HTTP fallbacks.
 
-**`web-sec-auditor` provides a unified DAST + SAST cybersecurity engine evaluating live endpoints and source code against OWASP Top 10, CWE Top 25, and enterprise compliance standards.**
+**`web-sec-auditor` provides a unified DAST + SAST + Secret Hunter + SCA cybersecurity engine evaluating live endpoints and source code against OWASP Top 10, CWE Top 25, and enterprise compliance standards.**
 
 ---
 
 ## 🚀 Key Capabilities
+
+### 🔑 High-Entropy Secret Hunter (Phase 3: Secrets & Token Detection)
+- 📊 **Shannon Entropy Scoring**:
+  - Calculates information density \( H(S) \) to eliminate false alarms while flagging true random secrets.
+  - Automatic credential redaction (`AKIA**************LE`) in all terminal snippets and JSON reports to prevent secondary credential leakage.
+- ☁️ **Cloud & SaaS Credentials**:
+  - **AWS**: Access Key IDs (`AKIA...`).
+  - **Google Cloud / Firebase**: API keys (`AIza...`).
+  - **AI / LLM Platforms**: OpenAI (`sk-...`), Anthropic Claude (`sk-ant-...`).
+  - **Payment & VCS**: Stripe Live Secret Keys (`sk_live_...`), GitHub Personal Access Tokens (`ghp_...`, `github_pat_...`).
+  - **Team Webhooks**: Slack bot tokens and incoming webhook URLs.
+  - **Cryptography**: Unencrypted RSA, OpenSSH, EC, and DSA private keys.
+  - **Database URIs**: Direct connection strings with embedded plaintext passwords (`postgres://user:pass@host/db`).
+  - **Generic High-Entropy Secrets**: Variable assignments matching secret keywords with entropy \( \ge 3.6 \).
+- 📜 **Git Commit History Scanning**:
+  - Analyzes commit diffs (`git log -p`) to identify credentials committed and subsequently deleted in earlier commits.
+
+### 📦 Software Composition Analysis (Phase 3: SCA Dependency Auditor)
+- 🌐 **Live OSV Database Integration**:
+  - Batch queries the Open Source Vulnerability (OSV) API (`https://api.osv.dev/v1/querybatch`) for npm dependencies.
+- 🛡️ **Actionable Remediation Roadmaps**:
+  - Maps CVSS v3 vectors to standard severity tiers (`CRITICAL`, `HIGH`, `MEDIUM`, `LOW`).
+  - Extracts exact patched upgrade targets (e.g. `>= 4.17.21`) and links directly to official GHSA and CVE advisories.
 
 ### 🔍 Static Application Security Testing (Phase 2: AST SAST Engine)
 - 💉 **Injection Flaws (OWASP A03 / CWE-89, CWE-78, CWE-22, CWE-79, CWE-95)**:
@@ -44,13 +66,6 @@ Modern web applications and APIs are frequently deployed with critical security 
   - **JWT Signature Bypass**: Intercepts insecure token verification allowing the `'none'` algorithm.
   - **Insecure Randomness**: Detects `Math.random()` or `random.random()` used in security-sensitive token contexts.
   - **Fallback Secrets**: Flags hardcoded fallback strings in secret environment assignments.
-- 🛡️ **Auth & Access Control (OWASP A07 / CWE-922, CWE-532)**:
-  - **Token Storage Hygiene**: Flags storing JWTs or session secrets in `localStorage` or `sessionStorage`.
-  - **Credential Leak in Logs**: Flags printing passwords, secret keys, or raw auth bodies to logger streams.
-- 🌐 **SSRF & Security Misconfiguration (OWASP A05, A10 / CWE-918, CWE-295, CWE-489)**:
-  - **SSRF**: Flags direct unvalidated outbound HTTP calls using request parameters.
-  - **TLS Disabled**: Flags `rejectUnauthorized: false` or `NODE_TLS_REJECT_UNAUTHORIZED='0'`.
-  - **Debug Flags**: Catches production debug modes left enabled in code.
 
 ### 🌐 Live Dynamic Testing (Phase 1: DAST & Transport Security)
 - **HTTP Security Header Probe**: CSP (`unsafe-inline`, `unsafe-eval`), HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy.
@@ -65,14 +80,17 @@ Modern web applications and APIs are frequently deployed with critical security 
 
 ### 1. Global / One-Off CLI Execution
 ```bash
+# Hunt for leaked credentials and high-entropy secrets in working directory
+npx @ritualdev-lab/web-sec-auditor scan-secrets .
+
+# Deep scan git commit diff history for previously committed secrets
+npx @ritualdev-lab/web-sec-auditor scan-secrets . --git-history
+
+# Audit package.json dependencies for known CVEs via OSV
+npx @ritualdev-lab/web-sec-auditor scan-deps . --dev
+
 # Audit a local codebase or repository (SAST)
-npx @ritualdev-lab/web-sec-auditor scan-code ./src
-
-# Filter findings by minimum severity threshold
-npx @ritualdev-lab/web-sec-auditor scan-code . --threshold HIGH
-
-# Output JSON for CI/CD pipelines
-npx @ritualdev-lab/web-sec-auditor scan-code . --format json
+npx @ritualdev-lab/web-sec-auditor scan-code ./src --threshold HIGH
 
 # Audit a live web application or API endpoint (DAST)
 npx @ritualdev-lab/web-sec-auditor scan-url https://example.com
@@ -89,78 +107,56 @@ npm install @ritualdev-lab/web-sec-auditor
 
 ## 💻 Programmatic Node.js SDK
 
-### SAST: Static Codebase Analysis
+### Secret Hunter: Leaked Credential Discovery
 ```typescript
-import { SastScanner } from "@ritualdev-lab/web-sec-auditor";
+import { SecretHunter } from "@ritualdev-lab/web-sec-auditor";
 
-const scanner = new SastScanner();
+const hunter = new SecretHunter();
 
-// Scan an entire repository or directory
-const report = await scanner.scanPath("./src", {
-  threshold: "HIGH",
-  languages: ["typescript", "javascript", "python", "go"],
+// Scan files or entire repository
+const report = await hunter.scanPath("./src", {
+  minEntropy: 3.5,
 });
 
-console.log(`Files Scanned: ${report.filesScanned} in ${report.durationMs}ms`);
-console.log(`Critical Issues: ${report.summary.critical}`);
-
-for (const finding of report.findings) {
-  console.log(`[${finding.severity}] ${finding.title}`);
-  console.log(`  File: ${finding.file}:${finding.line}:${finding.column}`);
-  console.log(`  Remediation: ${finding.remediation}`);
+console.log(`Exposed Secrets: ${report.findings.length}`);
+for (const f of report.findings) {
+  console.log(`[${f.severity}] ${f.title}`);
+  console.log(`  Redacted: ${f.maskedSecret} (Entropy: ${f.entropy})`);
+  console.log(`  Remediation: ${f.remediation}`);
 }
 ```
 
-### DAST: Live Endpoint Analysis
+### SCA: Dependency Vulnerability Audit
 ```typescript
-import { DastScanner } from "@ritualdev-lab/web-sec-auditor";
+import { ScaScanner } from "@ritualdev-lab/web-sec-auditor";
 
-const scanner = new DastScanner({
-  timeoutMs: 8000,
-  checkTlsCert: true,
+const sca = new ScaScanner();
+
+// Scan package.json against OSV advisory database
+const report = await sca.scanManifest("package.json", {
+  includeDev: true,
+  threshold: "HIGH",
 });
 
-const report = await scanner.scanUrl("https://my-saas-app.com");
-
-console.log(`Security Grade: ${report.grade} (Score: ${report.score}/100)`);
-console.log(`Total Findings: ${report.findings.length}`);
+console.log(`Vulnerable Packages: ${report.vulnerableDependencies}`);
+for (const vuln of report.findings) {
+  console.log(`[${vuln.severity}] ${vuln.title} (${vuln.id})`);
+  console.log(`  Package: ${vuln.packageName}@${vuln.currentVersion}`);
+  console.log(`  Remediation: ${vuln.remediation}`);
+}
 ```
 
----
+### SAST & DAST Scanning
+```typescript
+import { DastScanner, SastScanner } from "@ritualdev-lab/web-sec-auditor";
 
-## 🛡️ Example SAST Terminal Output
+// DAST live endpoint audit
+const dast = new DastScanner();
+const dastReport = await dast.scanUrl("https://my-saas-app.com");
 
-```text
-🛡️  WebSecAuditor - Static Application Security Testing (SAST) Report
-─────────────────────────────────────────────────────────────
-Target Path:    /home/dev/my-project/src
-Files Scanned:  42
-Scan Duration:  48ms
-Scan Timestamp: 2026-10-24T04:00:00.000Z
-
-SUMMARY:
-  ⛔ Critical: 1
-  🔴 High:     2
-  🟠 Medium:   1
-  🟡 Low:      0
-  ℹ️  Info:     0
-─────────────────────────────────────────────────────────────
-
-🚨 Detected 4 Security Issue(s):
-
-  1. [⛔ CRITICAL] SQL / NoSQL Query String Interpolation (SEC-INJ-SQLI)
-     Location:    controllers/users.ts:24:18
-     Category:    INJECTION | CWE-89 | A03:2021-Injection
-     Snippet:     const q = "SELECT * FROM users WHERE email = '" + req.body.email + "'";
-     Description: Raw string interpolation or concatenation was detected inside a database query call.
-     Remediation: 💡 Use parameterized queries or ORM query builder methods.
-
-  2. [🔴 HIGH] Hardcoded Cryptographic Fallback Secret (SEC-CRYP-FALLBACK-SECRET)
-     Location:    config/jwt.ts:8:32
-     Category:    AUTH | CWE-798 | A07:2021-Identification and Authentication Failures
-     Snippet:     const secret = process.env.JWT_SECRET || "dev_secret_key_123";
-     Description: A hardcoded fallback default secret was detected in environment variable assignment.
-     Remediation: 💡 Throw a startup configuration error if the secret environment variable is missing.
+// SAST source code audit
+const sast = new SastScanner();
+const sastReport = await sast.scanPath("./src");
 ```
 
 ---
@@ -180,12 +176,13 @@ SUMMARY:
   - Cryptographic weakness rules (Weak hash, JWT Alg None, Insecure Random, Fallback Secret)
   - Authentication hygiene (Web storage tokens, password logging)
   - SSRF & security misconfigurations (Unvalidated requests, TLS disabled, Debug mode)
-  - Severity-based threshold filtering (`CRITICAL`, `HIGH`, `MEDIUM`, `LOW`)
   - CLI binary: `web-sec-auditor scan-code <path>`
-- [ ] **Phase 3: High-Entropy Secret Hunter & SCA Dependency Auditor**
-  - Shannon entropy secret scanner for AWS, OpenAI, Gemini, Stripe, and private keys
-  - Git history scanner to detect credentials in earlier commits
-  - Software Composition Analysis (SCA) auditing `package.json` and lockfiles against OSV CVE database
+- [x] **Phase 3: High-Entropy Secret Hunter & SCA Dependency Auditor**
+  - Shannon entropy secret scanner for AWS, GCP, OpenAI, Anthropic, Stripe, GitHub, and private keys
+  - Automatic secret masking in reports (`AKIA**************LE`)
+  - Git history scanner (`git log -p`) to detect previously committed/deleted credentials
+  - Software Composition Analysis (SCA) querying OSV database for known CVEs/GHSAs
+  - CLI binaries: `web-sec-auditor scan-secrets <path>`, `web-sec-auditor scan-deps <path>`
 - [ ] **Phase 4: AI Exploit Verification, CVSS v3.1 Scoring & Auto-Patch Engine**
   - Contextual AI exploit proof-of-concept (PoC) generator
   - Automated code remediation recipes with unified `git diff` output
