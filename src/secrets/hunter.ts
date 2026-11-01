@@ -10,6 +10,7 @@ import type {
 } from "../types/index.js";
 import { calculateShannonEntropy } from "./entropy.js";
 import { SECRET_PATTERNS } from "./patterns.js";
+import { verifyAiSecret } from "./verifier.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -57,7 +58,33 @@ const SEVERITY_ORDER: Record<FindingSeverity, number> = {
   INFO: 1,
 };
 
+function getAiProvider(
+  patternId: string,
+): "openai" | "anthropic" | "huggingface" | "gemini" | undefined {
+  if (patternId === "SEC-TOK-OPENAI" || patternId === "SEC-TOK-OPENAI-PROJ") return "openai";
+  if (patternId === "SEC-TOK-ANTHROPIC") return "anthropic";
+  if (patternId === "SEC-TOK-HUGGINGFACE") return "huggingface";
+  if (patternId === "SEC-TOK-GEMINI") return "gemini";
+  return undefined;
+}
+
 export class SecretHunter {
+  /**
+   * Verifies discovered AI credentials via safe, non-destructive metadata verification pings.
+   */
+  public static async verifyFindings(
+    findings: SecretFinding[],
+    options?: { customFetch?: typeof fetch; timeoutMs?: number },
+  ): Promise<SecretFinding[]> {
+    for (const f of findings) {
+      const provider = getAiProvider(f.patternId);
+      if (provider && f.rawSecret) {
+        f.verification = await verifyAiSecret(provider, f.rawSecret, options);
+      }
+      delete f.rawSecret;
+    }
+    return findings;
+  }
   /**
    * Scan single text content in-memory for exposed credentials and high-entropy secrets.
    */
@@ -103,6 +130,7 @@ export class SecretHunter {
               snippet: safeSnippet,
               remediation:
                 "Revoke and rotate this exposed credential immediately. Store secrets in environment variables or an enterprise secrets manager (e.g. AWS Secrets Manager, GCP Secret Manager, Vault).",
+              rawSecret: targetSecret,
             });
           }
 
@@ -145,6 +173,14 @@ export class SecretHunter {
         allFindings.push(...fileFindings);
       } catch {
         // Skip binary or unreadable files safely
+      }
+    }
+
+    if (options?.verifySecrets) {
+      await SecretHunter.verifyFindings(allFindings);
+    } else {
+      for (const f of allFindings) {
+        delete f.rawSecret;
       }
     }
 

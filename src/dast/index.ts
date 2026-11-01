@@ -17,6 +17,7 @@ export * from "./cors.js";
 export * from "./tls.js";
 export * from "./scoring.js";
 export * from "./probes.js";
+export * from "./fuzzer.js";
 
 export class DastScanner {
   private defaultOptions: DastScanOptions;

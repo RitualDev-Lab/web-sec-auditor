@@ -42,6 +42,8 @@ const HELP_TEXT = `
     scan-code <path>      Audit local source code or repository (SAST & OWASP Top 10)
     scan-secrets <path>   Hunt for leaked API keys and high-entropy credentials
     scan-deps <path>      Audit third-party dependencies for known CVEs (SCA via OSV)
+    fuzz <spec>           Contract-driven API fuzzer (SQL injection, prototype mutation, boundary violation)
+    action                Execute turnkey GitHub Action runner (PR comments, inline diffs, SARIF upload)
     patch <file>          Apply an automated remediation patch to a vulnerable line
     bot                   Start GitHub App webhook listener server for automated PR audits
     pr-scan               Audit a Pull Request diff directly (for GitHub Actions / CI)
@@ -50,6 +52,8 @@ const HELP_TEXT = `
     help                  Display this help message
 
   OPTIONS:
+    --target <url>              Target base URL for contract-driven API fuzzer
+    --verify-secrets            Perform non-destructive live verification pings for AI credentials
     --format <text|json>        Output format (default: text)
     --sarif <file.sarif>        Export standardized OASIS SARIF v2.1.0 log
     --html <file.html>          Export self-contained interactive HTML executive dashboard
@@ -451,7 +455,9 @@ async function main() {
 
         // 2. Secret scan
         const hunter = new SecretHunter();
-        secretReport = await hunter.scanPath(target);
+        secretReport = await hunter.scanPath(target, {
+          verifySecrets: args.includes("--verify-secrets"),
+        });
         console.log(renderSecretsTextReport(secretReport));
 
         // 3. SCA scan (if package.json exists)
@@ -606,12 +612,13 @@ async function main() {
           : undefined;
 
       const scanGitHistory = args.includes("--git-history");
+      const verifySecrets = args.includes("--verify-secrets");
 
       const hunter = new SecretHunter();
       try {
         const report = scanGitHistory
-          ? await hunter.scanGitHistory(targetPath, { minEntropy })
-          : await hunter.scanPath(targetPath, { minEntropy });
+          ? await hunter.scanGitHistory(targetPath, { minEntropy, verifySecrets })
+          : await hunter.scanPath(targetPath, { minEntropy, verifySecrets });
 
         if (format === "json") {
           console.log(JSON.stringify(report, null, 2));
@@ -888,6 +895,57 @@ Waiting for pull_request and issue_comment webhook events...
       break;
     }
 
+    case "fuzz": {
+      const specPath = args[1];
+      if (!specPath) {
+        console.error(
+          "❌ Error: Missing OpenAPI spec path. Usage: web-sec-auditor fuzz <spec.json> --target <base-url>",
+        );
+        process.exit(1);
+      }
+
+      const targetIdx = args.indexOf("--target");
+      const targetUrl = targetIdx !== -1 ? args[targetIdx + 1] : undefined;
+      if (!targetUrl) {
+        console.error("❌ Error: Missing --target <base-url>. Specify live target server to fuzz.");
+        process.exit(1);
+      }
+
+      const specContent = await fs.readFile(path.resolve(specPath), "utf-8");
+      const { ApiContractFuzzer } = await import("./dast/fuzzer.js");
+      const fuzzer = new ApiContractFuzzer();
+      console.log(`\n🧪 [WebSecAuditor] Running Contract-Driven API Fuzzer on ${targetUrl}...`);
+
+      const report = await fuzzer.fuzz(specContent, targetUrl);
+      console.log(`   • Total Endpoints:  ${report.totalEndpoints}`);
+      console.log(`   • Probes Executed:  ${report.probesExecuted}`);
+      console.log(
+        `   • Vulnerabilities:  ${report.findings.length} (Critical: ${report.summary.critical}, High: ${report.summary.high})\n`,
+      );
+
+      for (const f of report.findings) {
+        console.log(`   🚨 [${f.severity}] ${f.mutationType} on ${f.method} ${f.endpoint}`);
+        console.log(`      Evidence:    ${f.evidence}`);
+        console.log(`      Remediation: ${f.remediation}\n`);
+      }
+
+      if (failOnLevel && checkFailOn(report.findings as any, failOnLevel)) {
+        console.error(`❌ Security Gate Failed: Findings exceed --fail-on ${failOnLevel}`);
+        process.exit(1);
+      }
+      break;
+    }
+
+    case "action": {
+      const { GitHubActionRunner } = await import("./action.js");
+      const runner = new GitHubActionRunner();
+      const result = await runner.run();
+      if (!result.passed) {
+        process.exit(1);
+      }
+      break;
+    }
+
     case "status": {
       console.log(`
 🛡️  WebSecAuditor - Engine Capabilities
@@ -910,6 +968,10 @@ Engines:
   [Phase 5] CI/CD Break-Build Gate       - ACTIVE (--fail-on critical|high|medium|low)
   [Enterprise] GitHub App Webhook Bot    - ACTIVE (Automated PR Scanning & Checks API)
   [Enterprise] 1-Click Auto-Patch Engine - ACTIVE (Auto-Branching & Fix Pull Requests)
+  [Phase 6] Inter-File Taint Flow Engine - ACTIVE (Cross-Module Source-to-Sink Dataflow)
+  [Phase 6] Contract-Driven API Fuzzer   - ACTIVE (OpenAPI SQLi, Prototype Mutation & Boundaries)
+  [Phase 6] Modern AI Secret Verifier    - ACTIVE (Non-Destructive Metadata Pings for OpenAI, Anthropic, Gemini, HF)
+  [Phase 6] Turnkey GitHub Action Gate   - ACTIVE (action.yml with PR Reviews, Inline Diffs & Code Scanning)
 `);
       break;
     }

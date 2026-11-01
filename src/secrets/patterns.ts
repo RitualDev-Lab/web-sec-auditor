@@ -14,6 +14,17 @@ export const SECRET_PATTERNS: SecretPattern[] = [
     mask: (m) => maskSecret(m, 4, 2),
   },
   {
+    id: "SEC-TOK-GEMINI",
+    name: "Google Gemini API Key",
+    category: "SECRETS",
+    severity: "CRITICAL",
+    description:
+      "Google Gemini AI API Key detected. Allows unmetered access to Gemini Flash/Pro LLMs and embeddings.",
+    regex: /\b(AIzaSy[0-9A-Za-z_\-]{25,40})\b/g,
+    minEntropy: 3.4,
+    mask: (m) => maskSecret(m, 6, 3),
+  },
+  {
     id: "SEC-TOK-GCP-API",
     name: "Google Cloud / Firebase API Key",
     category: "SECRETS",
@@ -26,12 +37,12 @@ export const SECRET_PATTERNS: SecretPattern[] = [
   },
   {
     id: "SEC-TOK-OPENAI",
-    name: "OpenAI API Secret Key",
+    name: "OpenAI API Secret Key (sk-*, sk-proj-*)",
     category: "SECRETS",
     severity: "CRITICAL",
     description:
-      "OpenAI API key detected. Exposed keys allow unauthorized LLM inference billing and organization data access.",
-    regex: /\b(sk-(?:proj-)?[a-zA-Z0-9_-]{20,})\b/g,
+      "OpenAI API key detected (sk-* or sk-proj-*). Exposed keys allow unauthorized LLM inference billing and organization data access.",
+    regex: /\b(sk-(?:proj-)?[a-zA-Z0-9_\-]{20,})\b/g,
     minEntropy: 3.5,
     mask: (m) => maskSecret(m, 7, 3),
   },
@@ -41,10 +52,21 @@ export const SECRET_PATTERNS: SecretPattern[] = [
     category: "SECRETS",
     severity: "CRITICAL",
     description:
-      "Anthropic Claude API key detected. Can be abused for unauthorized API consumption and prompt exfiltration.",
-    regex: /\b(sk-ant-(?:api03-)?[a-zA-Z0-9_-]{30,})\b/g,
+      "Anthropic Claude API key detected (sk-ant-*). Can be abused for unauthorized API consumption and prompt exfiltration.",
+    regex: /\b(sk-ant-(?:api03-)?[a-zA-Z0-9_\-]{30,})\b/g,
     minEntropy: 3.5,
     mask: (m) => maskSecret(m, 10, 3),
+  },
+  {
+    id: "SEC-TOK-HUGGINGFACE",
+    name: "Hugging Face User Access Token",
+    category: "SECRETS",
+    severity: "CRITICAL",
+    description:
+      "Hugging Face API token detected (hf_*). Can grant write/read access to private repositories, models, and inference endpoints.",
+    regex: /\b(hf_[a-zA-Z0-9]{34,})\b/g,
+    minEntropy: 3.2,
+    mask: (m) => maskSecret(m, 5, 3),
   },
   {
     id: "SEC-TOK-STRIPE",

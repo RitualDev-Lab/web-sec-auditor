@@ -1,4 +1,5 @@
 export { SastScanner, isTestFilePath, computeConfidenceScore } from "./engine.js";
+export { InterFileTaintAnalyzer } from "./taint-flow.js";
 export { RuleRegistry } from "./registry.js";
 export { findMatchesInContent, detectLanguage } from "./utils.js";
 export {

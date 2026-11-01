@@ -8,3 +8,4 @@ export * from "./patch/index.js";
 export * from "./reporting/index.js";
 export * from "./mcp/index.js";
 export * from "./bot/index.js";
+export * from "./action.js";

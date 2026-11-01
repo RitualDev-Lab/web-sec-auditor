@@ -226,6 +226,44 @@ web-sec-auditor bot --port 3000 --secret $WEBHOOK_SECRET --auto-patch --fail-on 
 web-sec-auditor pr-scan --owner RitualDev-Lab --repo backend --pr 42 --token $GITHUB_TOKEN --fail-on HIGH
 ```
 
+### ⚡ Official Turnkey GitHub Action (`action.yml`)
+Run WebSecAuditor directly in your PR pipelines with automated Markdown executive comments, inline code review diffs with 1-click `suggestion` blocks, and native SARIF upload to the GitHub Code Scanning security tab:
+
+```yaml
+- name: WebSecAuditor Security Gate
+  uses: RitualDev-Lab/web-sec-auditor@main
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+    fail-on: HIGH
+    comment-pr: 'true'
+    inline-review: 'true'
+    upload-sarif: 'true'
+    verify-secrets: 'true'
+```
+
+### 🧬 Inter-File AST Taint Flow Analysis
+Upgrade SAST beyond single-file regexes into cross-module data flow analysis:
+- Identifies untrusted route inputs (`req.params`, `req.query`, `req.body`, `ctx.request`).
+- Cross-references exports and imports across module boundaries.
+- Traces untrusted flow directly into critical sinks (`db.query`, `child_process.exec`, `fetch()`, `fs.readFile()`).
+
+### 🎯 Contract-Driven API Fuzzing
+Fuzz live endpoints defined in OpenAPI 3.0 / Swagger specs:
+```bash
+web-sec-auditor fuzz ./openapi.json --target https://api.staging.example.com --fail-on HIGH
+```
+- Probes SQL injection error leakages across path/query/body parameters.
+- Evaluates prototype pollution mutations (`__proto__`, `constructor.prototype`).
+- Tests boundary buffer and large payload resistance.
+
+### 🔑 Modern AI Secret Scanning & Live Verification
+Detect and optionally verify active AI and cloud developer credentials:
+- **OpenAI**: Legacy `sk-*` and modern project keys `sk-proj-*` with `/v1/models` verification.
+- **Anthropic**: `sk-ant-*` Claude credentials with `/v1/messages` header validation.
+- **Google Gemini**: `AIzaSy*` API keys with `/v1beta/models` live verification.
+- **HuggingFace**: `hf_*` user access tokens with `/api/whoami-v2` verification.
+- Run with `--verify-secrets` to confirm whether exposed credentials are actively valid, revoked, or rate-limited without leaking secret values.
+
 ---
 
 ## 🔄 GitHub Actions CI/CD Integration

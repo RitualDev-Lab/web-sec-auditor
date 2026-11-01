@@ -208,6 +208,17 @@ export interface SecretFinding {
   remediation: string;
   commitHash?: string;
   commitAuthor?: string;
+  rawSecret?: string;
+  verification?: SecretVerificationResult;
+}
+
+export type SecretVerificationStatus = "ACTIVE" | "REVOKED" | "UNKNOWN";
+
+export interface SecretVerificationResult {
+  status: SecretVerificationStatus;
+  provider: "openai" | "anthropic" | "huggingface" | "gemini" | "generic";
+  details: string;
+  verifiedAt: string;
 }
 
 export interface SecretScanReport {
@@ -232,6 +243,7 @@ export interface SecretScanOptions {
   maxCommits?: number;
   excludeDirs?: string[];
   maxFileSizeKb?: number;
+  verifySecrets?: boolean;
 }
 
 // ─── Phase 3: Software Composition Analysis (SCA) Types ──────
@@ -297,4 +309,78 @@ export interface ScaScanOptions {
   threshold?: FindingSeverity;
   timeoutMs?: number;
   ecosystem?: string;
+}
+
+// ─── Inter-File AST Taint Flow Types ─────────────────────────
+
+export interface TaintFlowTraceStep {
+  file: string;
+  line: number;
+  symbol: string;
+  expression: string;
+  type: "SOURCE" | "PROPAGATION" | "SINK";
+}
+
+export interface TaintFlowFinding extends SastFinding {
+  sourceFile: string;
+  sourceLine: number;
+  sourceExpression: string;
+  sinkFile: string;
+  sinkLine: number;
+  sinkExpression: string;
+  taintTrace: TaintFlowTraceStep[];
+}
+
+// ─── Contract-Driven API Fuzzing Types ─────────────────────────
+
+export interface ApiFuzzFinding {
+  id: string;
+  endpoint: string;
+  method: string;
+  mutationType: "SQL_INJECTION" | "PROTOTYPE_POLLUTION" | "BOUNDARY_BUFFER" | "UNHANDLED_EXCEPTION";
+  payload: string | number | Record<string, unknown>;
+  statusCode: number;
+  evidence: string;
+  severity: FindingSeverity;
+  description: string;
+  remediation: string;
+  cwe?: string;
+}
+
+export interface ApiFuzzReport {
+  targetBaseUrl: string;
+  totalEndpoints: number;
+  probesExecuted: number;
+  scanTimestamp: string;
+  durationMs: number;
+  summary: {
+    critical: number;
+    high: number;
+    medium: number;
+    low: number;
+    info: number;
+  };
+  findings: ApiFuzzFinding[];
+}
+
+export interface ApiFuzzOptions {
+  timeoutMs?: number;
+  maxProbesPerEndpoint?: number;
+  headers?: Record<string, string>;
+  testSqlInjection?: boolean;
+  testPrototypePollution?: boolean;
+  testBoundaryBuffer?: boolean;
+}
+
+// ─── GitHub Action Runner Types ─────────────────────────
+
+export interface GitHubActionOptions {
+  githubToken?: string;
+  targetDir?: string;
+  failOn?: FindingSeverity;
+  sarifFile?: string;
+  commentPr?: boolean;
+  inlineReview?: boolean;
+  uploadSarif?: boolean;
+  verifySecrets?: boolean;
 }

@@ -1,0 +1,101 @@
+name: 'WebSecAuditor - DAST, SAST, SCA & AI Remediation Engine'
+description: 'Turnkey cybersecurity scanner with inter-file taint analysis, AI secret verification, automated PR comments, inline code review diffs, and SARIF upload.'
+author: 'RitualDev Lab'
+
+branding:
+  icon: 'shield'
+  color: 'purple'
+
+inputs:
+  github-token:
+    description: 'GitHub Personal Access Token or default GITHUB_TOKEN secret'
+    required: false
+    default: ${{ github.token }}
+  target-dir:
+    description: 'Target repository directory or path to audit'
+    required: false
+    default: '.'
+  fail-on:
+    description: 'Minimum severity threshold to fail the workflow gate (CRITICAL, HIGH, MEDIUM, LOW, NONE)'
+    required: false
+    default: 'HIGH'
+  sarif-file:
+    description: 'Output filepath for the OASIS SARIF v2.1.0 security report'
+    required: false
+    default: 'results.sarif'
+  comment-pr:
+    description: 'Post executive security status and vulnerability scorecard comment on PRs'
+    required: false
+    default: 'true'
+  inline-review:
+    description: 'Submit inline code review comments with 1-click GitHub suggestion diffs'
+    required: false
+    default: 'true'
+  upload-sarif:
+    description: 'Upload generated SARIF report to GitHub Security / Code Scanning tab'
+    required: false
+    default: 'true'
+  verify-secrets:
+    description: 'Execute non-destructive live verification pings for detected AI credentials (OpenAI, Anthropic, Gemini, HuggingFace)'
+    required: false
+    default: 'false'
+
+outputs:
+  passed:
+    description: 'Whether the repository passed the security gate threshold'
+    value: ${{ steps.audit.outputs.passed }}
+  findings-count:
+    description: 'Total number of detected security findings'
+    value: ${{ steps.audit.outputs.findings-count }}
+  sarif-file:
+    description: 'Path where the SARIF report was saved'
+    value: ${{ inputs.sarif-file }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Prepare WebSecAuditor Runtime
+      shell: bash
+      run: |
+        cd "${{ github.action_path }}"
+        if [ ! -f "dist/action.js" ]; then
+          npm ci --ignore-scripts || npm install --ignore-scripts
+          npm run build
+        fi
+
+    - name: Run WebSecAuditor Unified Action Gate
+      id: audit
+      shell: bash
+      env:
+        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
+        INPUT_TARGET_DIR: ${{ inputs.target-dir }}
+        INPUT_FAIL_ON: ${{ inputs.fail-on }}
+        INPUT_SARIF_FILE: ${{ inputs.sarif-file }}
+        INPUT_COMMENT_PR: ${{ inputs.comment-pr }}
+        INPUT_INLINE_REVIEW: ${{ inputs.inline-review }}
+        INPUT_UPLOAD_SARIF: ${{ inputs.upload-sarif }}
+        INPUT_VERIFY_SECRETS: ${{ inputs.verify-secrets }}
+      run: |
+        node -e '
+          import("${{ github.action_path }}/dist/action.js")
+            .then(m => new m.GitHubActionRunner().run())
+            .then(res => {
+              console.log("::set-output name=passed::" + res.passed);
+              console.log("::set-output name=findings-count::" + res.totalFindings);
+              if (!res.passed) {
+                console.error("❌ WebSecAuditor gate failed on severity threshold!");
+                process.exit(1);
+              }
+            })
+            .catch(err => {
+              console.error("Action error:", err);
+              process.exit(1);
+            });
+        '
+
+    - name: Upload SARIF to GitHub Security Tab (Fallback)
+      if: always() && inputs.upload-sarif == 'true'
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.sarif-file }}
+        category: web-sec-auditor

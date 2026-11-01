@@ -10,6 +10,7 @@ import type {
   SupportedLanguage,
 } from "../types/index.js";
 import { RuleRegistry } from "./registry.js";
+import { InterFileTaintAnalyzer } from "./taint-flow.js";
 import { detectLanguage } from "./utils.js";
 
 const DEFAULT_EXCLUDE_DIRS = new Set([
@@ -209,15 +210,24 @@ export class SastScanner {
     }
 
     const allFindings: SastFinding[] = [];
+    const fileContents = new Map<string, string>();
 
     for (const file of filesToScan) {
       try {
         const content = await fs.readFile(file, "utf-8");
+        fileContents.set(file.replace(/\\/g, "/"), content);
         const fileFindings = this.scanContent(content, file, options);
         allFindings.push(...fileFindings);
       } catch {
         // Skip unreadable or binary files safely
       }
+    }
+
+    // Inter-File AST Taint Flow Analysis across modules
+    if (filesToScan.length > 1) {
+      const taintAnalyzer = new InterFileTaintAnalyzer();
+      const taintFindings = taintAnalyzer.analyzeProject(fileContents);
+      allFindings.push(...taintFindings);
     }
 
     // Sort findings by severity descending, then by file and line
