@@ -7,6 +7,7 @@ import type {
 import { evaluateCookies } from "./cookies.js";
 import { evaluateCors } from "./cors.js";
 import { evaluateSecurityHeaders } from "./headers.js";
+import { runActiveProbes } from "./probes.js";
 import { calculateSecurityScore } from "./scoring.js";
 import { evaluateTls } from "./tls.js";
 
@@ -15,6 +16,7 @@ export * from "./cookies.js";
 export * from "./cors.js";
 export * from "./tls.js";
 export * from "./scoring.js";
+export * from "./probes.js";
 
 export class DastScanner {
   private defaultOptions: DastScanOptions;
@@ -126,7 +128,17 @@ export class DastScanner {
       tlsResult = tlsEval.tlsResult;
     }
 
-    // 7. Calculate Overall Security Score & Letter Grade
+    // 7. Active Dynamic Probing (if enabled)
+    if (opts.enableActiveProbes) {
+      try {
+        const probeFindings = await runActiveProbes(finalUrl, opts);
+        allFindings.push(...probeFindings);
+      } catch {
+        // Non-destructive probe failure tolerated
+      }
+    }
+
+    // 8. Calculate Overall Security Score & Letter Grade
     const { score, grade, summary } = calculateSecurityScore(allFindings);
 
     return {

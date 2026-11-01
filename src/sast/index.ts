@@ -1,4 +1,4 @@
-export { SastScanner } from "./engine.js";
+export { SastScanner, isTestFilePath, computeConfidenceScore } from "./engine.js";
 export { RuleRegistry } from "./registry.js";
 export { findMatchesInContent, detectLanguage } from "./utils.js";
 export {

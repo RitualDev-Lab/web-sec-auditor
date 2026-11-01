@@ -35,6 +35,67 @@ const SEVERITY_ORDER: Record<FindingSeverity, number> = {
   INFO: 1,
 };
 
+const CONFIDENCE_WEIGHT: Record<"HIGH" | "MEDIUM" | "LOW", number> = {
+  HIGH: 3,
+  MEDIUM: 2,
+  LOW: 1,
+};
+
+export function isTestFilePath(filePath: string): boolean {
+  const normalized = filePath.replace(/\\/g, "/").toLowerCase();
+  const testDirPattern = /(?:^|\/)(?:tests?|__tests__|mocks?|fixtures?|specs?|e2e|stubs?)\//i;
+  const testFilePattern =
+    /(?:(?:\.|\/)(?:test|spec|mock|fixture|stub)\.[a-z0-9]+$|test_[^/]+\.[a-z0-9]+$|[^/]+_test\.[a-z0-9]+$)/i;
+  return testDirPattern.test(normalized) || testFilePattern.test(normalized);
+}
+
+export function computeConfidenceScore(
+  ruleId: string,
+  filePath: string,
+  snippet: string,
+): { confidence: "HIGH" | "MEDIUM" | "LOW"; confidenceScore: number; isTestFile: boolean } {
+  const isTest = isTestFilePath(filePath);
+  if (isTest) {
+    return {
+      confidence: "LOW",
+      confidenceScore: 0.35,
+      isTestFile: true,
+    };
+  }
+
+  let score = 0.9;
+
+  // Real production indicators (direct req/env usage)
+  if (
+    snippet.includes("req.") ||
+    snippet.includes("request.") ||
+    snippet.includes("process.env") ||
+    snippet.includes("eval(")
+  ) {
+    score = Math.min(1.0, score + 0.08);
+  }
+
+  // Commented lines or pseudo-code reduce confidence
+  const trimmed = snippet.trim();
+  if (
+    trimmed.startsWith("//") ||
+    trimmed.startsWith("/*") ||
+    trimmed.startsWith("*") ||
+    trimmed.startsWith("#")
+  ) {
+    score = 0.3;
+  }
+
+  const confidence: "HIGH" | "MEDIUM" | "LOW" =
+    score >= 0.85 ? "HIGH" : score >= 0.6 ? "MEDIUM" : "LOW";
+
+  return {
+    confidence,
+    confidenceScore: Math.round(score * 100) / 100,
+    isTestFile: false,
+  };
+}
+
 export class SastScanner {
   private registry: RuleRegistry;
   private patchEngine: PatchEngine;
@@ -48,6 +109,11 @@ export class SastScanner {
    * Scan single file in-memory string content against registered rules.
    */
   public scanContent(content: string, filePath: string, options?: SastScanOptions): SastFinding[] {
+    const isTest = isTestFilePath(filePath);
+    if (options?.ignoreTestFiles && isTest) {
+      return [];
+    }
+
     const lang = detectLanguage(filePath);
     if (lang === "unknown") return [];
 
@@ -63,6 +129,16 @@ export class SastScanner {
     for (const rule of rules) {
       const matches = rule.evaluate(content, filePath);
       for (const match of matches) {
+        const confMeta = computeConfidenceScore(rule.id, filePath, match.snippet);
+
+        if (options?.minConfidence) {
+          const reqWeight = CONFIDENCE_WEIGHT[options.minConfidence];
+          const currWeight = CONFIDENCE_WEIGHT[confMeta.confidence];
+          if (currWeight < reqWeight) {
+            continue;
+          }
+        }
+
         // Compute CVSS v3.1 metrics
         const cvssVector = DEFAULT_CVSS_MAP[rule.id];
         const cvss = cvssVector ? calculateCvssV31(cvssVector) : undefined;
@@ -104,6 +180,9 @@ export class SastScanner {
           cvssVector: cvss?.vectorString,
           compliance,
           patch,
+          confidence: confMeta.confidence,
+          isTestFile: confMeta.isTestFile,
+          confidenceScore: confMeta.confidenceScore,
         });
       }
     }

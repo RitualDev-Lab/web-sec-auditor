@@ -86,6 +86,29 @@ export const COMPLIANCE_REGISTRY: Record<string, ComplianceMapping> = {
     pciDssV4: ["Req 3.4.1 - Protection of Cardholder Data in Storage"],
     soc2: ["CC6.1 - Credential Storage Controls"],
   },
+  "CWE-1321": {
+    cwe: "CWE-1321",
+    cweTitle:
+      "Improperly Controlled Modification of Dynamically-Determined Object Attributes ('Prototype Pollution')",
+    owasp: "A03:2021-Injection",
+    pciDssV4: ["Req 6.2.4 - Injection Defenses"],
+    soc2: ["CC6.1 - Access Controls", "CC7.1 - Threat Detection"],
+  },
+  "CWE-502": {
+    cwe: "CWE-502",
+    cweTitle: "Deserialization of Untrusted Data",
+    cweTop25Rank: 15,
+    owasp: "A08:2021-Software and Data Integrity Failures",
+    pciDssV4: ["Req 6.2.4 - Code Integrity and Deserialization Defenses"],
+    soc2: ["CC6.6 - Perimeter Defenses", "CC7.1 - Vulnerability Mitigation"],
+  },
+  "CWE-943": {
+    cwe: "CWE-943",
+    cweTitle: "Improper Neutralization of Special Elements in Data Query Logic ('NoSQL Injection')",
+    owasp: "A03:2021-Injection",
+    pciDssV4: ["Req 6.2.4 - Injection Protection", "Req 6.3.2 - Application Security Testing"],
+    soc2: ["CC6.1 - Logical Access Controls"],
+  },
 };
 
 /**
@@ -100,6 +123,9 @@ export function getComplianceMapping(cweOrRuleId: string): ComplianceMapping | u
   // If passed rule ID, extract standard CWE
   const upper = cweOrRuleId.toUpperCase();
   if (upper.includes("SQLI")) return COMPLIANCE_REGISTRY["CWE-89"];
+  if (upper.includes("NOSQL")) return COMPLIANCE_REGISTRY["CWE-943"];
+  if (upper.includes("PROTO")) return COMPLIANCE_REGISTRY["CWE-1321"];
+  if (upper.includes("DESERIAL")) return COMPLIANCE_REGISTRY["CWE-502"];
   if (upper.includes("CMD")) return COMPLIANCE_REGISTRY["CWE-78"];
   if (upper.includes("XSS")) return COMPLIANCE_REGISTRY["CWE-79"];
   if (upper.includes("PATH")) return COMPLIANCE_REGISTRY["CWE-22"];

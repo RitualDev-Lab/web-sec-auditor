@@ -103,7 +103,7 @@ export function extractPatchedVersion(vuln: OsvVulnerability): string | undefine
  */
 export async function queryOsvBatch(
   dependencies: PackageDependency[],
-  options?: { timeoutMs?: number; customFetch?: typeof fetch },
+  options?: { timeoutMs?: number; customFetch?: typeof fetch; ecosystem?: string },
 ): Promise<ScaFinding[]> {
   if (dependencies.length === 0) return [];
 
@@ -113,7 +113,7 @@ export async function queryOsvBatch(
   const queries = dependencies.map((dep) => ({
     package: {
       name: dep.name,
-      ecosystem: "npm",
+      ecosystem: dep.ecosystem || options?.ecosystem || "npm",
     },
     version: dep.version,
   }));

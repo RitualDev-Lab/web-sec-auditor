@@ -114,5 +114,33 @@ export function generateRemediation(snippet: string, ruleId: string): PatchRepla
     }
   }
 
+  // 7. Prototype Pollution Guard
+  if (ruleId === "SEC-INJ-PROTO-POLLUTION") {
+    const assignMatch = trimmed.match(
+      /^(.*)(\b(?:target|dest|obj|acc|result)\[(?:key|prop|k|p)\]\s*=\s*[^;]+)(;?)$/,
+    );
+    if (assignMatch) {
+      return {
+        originalText: trimmed,
+        replacementText: `if (key !== "__proto__" && key !== "constructor" && key !== "prototype") { ${assignMatch[2]}; } /* Prototype pollution guard */`,
+        explanation:
+          "Added guard condition blocking __proto__, constructor, and prototype property modifications.",
+      };
+    }
+  }
+
+  // 8. NoSQL Injection: Sanitize query parameter with mongo-sanitize
+  if (ruleId === "SEC-INJ-NOSQL") {
+    const findMatch = trimmed.match(/^(.*)\.(find|findOne)\s*\(\s*(req\.(?:body|query))\s*\)(.*)$/);
+    if (findMatch) {
+      return {
+        originalText: trimmed,
+        replacementText: `${findMatch[1]}.${findMatch[2]}(sanitize(${findMatch[3]}))${findMatch[4]} /* Sanitize untrusted query payload */`,
+        explanation:
+          "Sanitized MongoDB query expression against operator injection ($where, $regex, $ne).",
+      };
+    }
+  }
+
   return undefined;
 }

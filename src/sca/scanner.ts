@@ -1,7 +1,7 @@
 import * as path from "node:path";
 import type { FindingSeverity, ScaFinding, ScaScanOptions, ScaScanReport } from "../types/index.js";
 import { queryOsvBatch } from "./osv.js";
-import { parsePackageJson } from "./parser.js";
+import { detectAndParseManifest } from "./parser.js";
 
 const SEVERITY_ORDER: Record<FindingSeverity, number> = {
   CRITICAL: 5,
@@ -19,7 +19,8 @@ export class ScaScanner {
   }
 
   /**
-   * Scan project manifest (package.json) for known vulnerabilities against OSV advisory database.
+   * Scan project manifest (package.json, requirements.txt, poetry.lock, go.sum)
+   * for known vulnerabilities against the OSV advisory database.
    */
   public async scanManifest(
     manifestPath: string,
@@ -28,13 +29,20 @@ export class ScaScanner {
     const startTime = Date.now();
     const resolvedPath = path.resolve(manifestPath);
 
-    const deps = await parsePackageJson(resolvedPath, {
+    const parsed = await detectAndParseManifest(resolvedPath, {
       includeDev: options?.includeDev,
     });
+
+    const ecosystem = options?.ecosystem || parsed.ecosystem;
+    const deps = parsed.dependencies.map((d) => ({
+      ...d,
+      ecosystem: d.ecosystem || ecosystem,
+    }));
 
     const rawFindings = await queryOsvBatch(deps, {
       timeoutMs: options?.timeoutMs,
       customFetch: this.customFetch,
+      ecosystem,
     });
 
     let findings = rawFindings;
@@ -60,8 +68,8 @@ export class ScaScanner {
     };
 
     return {
-      manifestPath: resolvedPath,
-      ecosystem: "npm",
+      manifestPath: parsed.manifestPath,
+      ecosystem,
       totalDependencies: deps.length,
       vulnerableDependencies: vulnerableSet.size,
       scanTimestamp: new Date().toISOString(),

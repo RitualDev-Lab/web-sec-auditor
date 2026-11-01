@@ -59,4 +59,23 @@ export const ssrfMisconfigRules: SastRule[] = [
       return findMatchesInContent(content, regex);
     },
   },
+  {
+    id: "SEC-SSRF-AXIOS-FETCH",
+    name: "Server-Side Request Forgery (SSRF) in axios/fetch without IP/CIDR Validation",
+    category: "INJECTION",
+    severity: "HIGH",
+    cwe: "CWE-918",
+    owasp: "A10:2021-Server-Side Request Forgery",
+    description:
+      "Direct invocation of axios or fetch with dynamic URLs, webhook URLs, or template literals without validating against private RFC1918/link-local CIDR ranges enables SSRF.",
+    remediation:
+      "Resolve DNS and validate that target IP addresses are not in private/internal subnets (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.0/8, 169.254.169.254) before requesting.",
+    languages: ["typescript", "javascript"],
+    evaluate(content: string) {
+      // Matches: axios.get(url), axios.post(targetUrl), axios(endpoint), fetch(url), fetch(userUrl), fetch(`${target}`)
+      const regex =
+        /(?:(?:axios|client)\.(?:get|post|put|delete|request)\s*\(\s*(?:url|targetUrl|endpoint|webhookUrl|destUrl|`https?:\/\/\$\{[^}]+\}`)|(?:axios|fetch)\s*\(\s*(?:url|targetUrl|endpoint|webhookUrl|destUrl|`https?:\/\/\$\{[^}]+\}`))/i;
+      return findMatchesInContent(content, regex);
+    },
+  },
 ];

@@ -96,4 +96,61 @@ export const injectionRules: SastRule[] = [
       return findMatchesInContent(content, regex);
     },
   },
+  {
+    id: "SEC-INJ-PROTO-POLLUTION",
+    name: "Prototype Pollution in Object Merging / Recursive Key Assignment",
+    category: "INJECTION",
+    severity: "HIGH",
+    cwe: "CWE-1321",
+    owasp: "A03:2021-Injection",
+    description:
+      "Recursive object merge, clone, or dynamic property assignment without checking for '__proto__', 'constructor', or 'prototype' keys permits Prototype Pollution.",
+    remediation:
+      "Filter out '__proto__', 'constructor', and 'prototype' keys before assigning properties, or use Object.create(null) or Map data structures.",
+    languages: ["typescript", "javascript"],
+    evaluate(content: string) {
+      // Matches: target[key] = source[key], obj[prop] = val without proto guard, Object.assign(target, req.body), __proto__ in assignments
+      const regex =
+        /(?:(?:target|dest|obj|acc|result|source)\[(?:key|prop|k|p)\]\s*=\s*[^;\n]+|__proto__|Object\.(?:assign|merge|extend)\s*\([^)]*req\.(?:body|query)|function\s*(?:merge|deepMerge|clone|extend)\b[^{]*\{[^}]*\[(?:key|prop)\])/;
+      return findMatchesInContent(content, regex);
+    },
+  },
+  {
+    id: "SEC-INJ-DESERIALIZATION",
+    name: "Insecure Object Deserialization",
+    category: "INJECTION",
+    severity: "CRITICAL",
+    cwe: "CWE-502",
+    owasp: "A08:2021-Software and Data Integrity Failures",
+    description:
+      "Deserialization of untrusted payloads via pickle.loads(), yaml.load() without SafeLoader, node-serialize, or serialize-javascript allows arbitrary code execution.",
+    remediation:
+      "Use safe deserialization formats like JSON.parse(), yaml.safe_load(), or strict schema validation. Never deserialize untrusted pickle or serialized code.",
+    languages: ["typescript", "javascript", "python"],
+    evaluate(content: string) {
+      // Matches: pickle.loads(...), pickle.load(...), yaml.load(...), node-serialize.unserialize, serialize.unserialize
+      const regex =
+        /(?:pickle\.(?:loads?)\s*\(|yaml\.(?:load|unsafe_load)\s*\(|(?:\bnode_serialize|serialize)\.unserialize\s*\(|unserialize\s*\(\s*req\.)/;
+      return findMatchesInContent(content, regex);
+    },
+  },
+  {
+    id: "SEC-INJ-NOSQL",
+    name: "NoSQL Operator Injection ($where, $regex, unvalidated operators)",
+    category: "INJECTION",
+    severity: "HIGH",
+    cwe: "CWE-943",
+    owasp: "A03:2021-Injection",
+    description:
+      "NoSQL query expressions utilizing $where with string concatenation or accepting raw request body/query objects permit operator injection ($where, $regex, $ne).",
+    remediation:
+      "Disable $where in MongoDB, sanitize query objects with mongo-sanitize, and validate input types strictly using Zod or Joi.",
+    languages: ["typescript", "javascript", "python"],
+    evaluate(content: string) {
+      // Matches: $where: "... + req", $where: `...${}`, $regex: req.query, .find(req.body), .findOne(req.query)
+      const regex =
+        /(?:\$where\s*:\s*(?:`[^`]*\$\{[^}]+\}`|["'][^"']*\s*\+|req\.(?:query|body|params))|\$regex\s*:\s*req\.(?:query|body|params)|\.(?:find|findOne|deleteMany|updateMany)\s*\(\s*req\.(?:body|query)\s*\))/i;
+      return findMatchesInContent(content, regex);
+    },
+  },
 ];

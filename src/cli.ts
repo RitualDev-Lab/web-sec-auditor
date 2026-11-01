@@ -97,12 +97,23 @@ const SEVERITY_RANKS: Record<FindingSeverity, number> = {
   INFO: 0,
 };
 
-function checkFailOn(findings: Array<{ severity: FindingSeverity }>, failOnLevel?: string): void {
+function checkFailOn(
+  findings: Array<{ severity: FindingSeverity; isTestFile?: boolean; confidence?: string }>,
+  failOnLevel?: string,
+  options?: { ignoreTestFiles?: boolean },
+): void {
   if (!failOnLevel) return;
   const targetRank = SEVERITY_RANKS[failOnLevel.toUpperCase() as FindingSeverity];
   if (targetRank === undefined) return;
 
-  const failingIssues = findings.filter((f) => SEVERITY_RANKS[f.severity] >= targetRank);
+  const failingIssues = findings.filter((f) => {
+    if (SEVERITY_RANKS[f.severity] < targetRank) return false;
+    if (options?.ignoreTestFiles && f.isTestFile) return false;
+    // Don't fail the build on LOW confidence test file issues when gating on HIGH/CRITICAL
+    if (f.isTestFile && f.confidence === "LOW" && targetRank >= SEVERITY_RANKS.HIGH) return false;
+    return true;
+  });
+
   if (failingIssues.length > 0) {
     console.error(
       `\n🚨 CI/CD Gate Broken: Found ${failingIssues.length} issue(s) matching or exceeding threshold '${failOnLevel.toUpperCase()}'.`,
@@ -509,8 +520,9 @@ async function main() {
           : 10000;
 
       const checkTlsCert = !args.includes("--no-cert");
+      const enableActiveProbes = args.includes("--active-probes");
 
-      const scanner = new DastScanner({ timeoutMs, checkTlsCert });
+      const scanner = new DastScanner({ timeoutMs, checkTlsCert, enableActiveProbes });
       try {
         const report = await scanner.scanUrl(targetUrl);
         if (format === "json") {
@@ -551,12 +563,14 @@ async function main() {
           : undefined;
 
       const showDiff = args.includes("--diff");
+      const ignoreTestFiles = args.includes("--ignore-test-files");
 
       const scanner = new SastScanner();
       try {
         const report = await scanner.scanPath(targetPath, {
           threshold,
           languages,
+          ignoreTestFiles,
         });
 
         if (format === "json") {
@@ -702,6 +716,21 @@ ${recipe.diff}
 ─────────────────────────────────────────────────────────────
 💡 Explanation: ${recipe.explanation}
 `);
+
+        const verifyTests = args.includes("--verify-tests");
+        if (verifyTests) {
+          console.log("🧪 Running dry-run test verification on patch in isolated subprocess...");
+          const verifyResult = await patchEngine.verifyPatchWithTests(recipe);
+          if (!verifyResult.passed) {
+            console.error(
+              `❌ Test verification failed with exit code ${verifyResult.exitCode} using '${verifyResult.testCommand}'. Patch aborted.\n${verifyResult.stderr}`,
+            );
+            process.exit(1);
+          }
+          console.log(
+            `✅ Test verification passed (${verifyResult.durationMs}ms with '${verifyResult.testCommand}').`,
+          );
+        }
 
         if (!dryRun) {
           await patchEngine.applyPatch(recipe);

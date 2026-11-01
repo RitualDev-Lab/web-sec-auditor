@@ -97,6 +97,12 @@ export interface DastScanOptions {
   followRedirects?: boolean;
   checkTlsCert?: boolean;
   customHeaders?: Record<string, string>;
+  enableActiveProbes?: boolean;
+  activeProbeOptions?: {
+    testCorsReflection?: boolean;
+    testCsrfMutations?: boolean;
+    testGraphqlIntrospection?: boolean;
+  };
 }
 
 export type SupportedLanguage = "typescript" | "javascript" | "python" | "go" | "all";
@@ -146,6 +152,9 @@ export interface SastFinding {
     diff: string;
     explanation: string;
   };
+  confidence?: "HIGH" | "MEDIUM" | "LOW";
+  isTestFile?: boolean;
+  confidenceScore?: number;
 }
 
 export interface SastScanReport {
@@ -168,6 +177,8 @@ export interface SastScanOptions {
   languages?: SupportedLanguage[];
   excludeDirs?: string[];
   maxFileSizeKb?: number;
+  ignoreTestFiles?: boolean;
+  minConfidence?: "HIGH" | "MEDIUM" | "LOW";
 }
 
 // ─── Phase 3: Secret Detection Types ─────────────────────────
@@ -229,6 +240,25 @@ export interface PackageDependency {
   name: string;
   version: string;
   isDev: boolean;
+  ecosystem?: string; // "npm" | "PyPI" | "Go"
+}
+
+export interface PatchVerificationOptions {
+  repoDir?: string;
+  testCommand?: string;
+  timeoutMs?: number;
+  env?: Record<string, string>;
+}
+
+export interface PatchVerificationResult {
+  passed: boolean;
+  testCommand: string;
+  exitCode: number | null;
+  stdout: string;
+  stderr: string;
+  durationMs: number;
+  revertedCleanly: boolean;
+  error?: string;
 }
 
 export interface ScaFinding {
@@ -266,4 +296,5 @@ export interface ScaScanOptions {
   includeDev?: boolean;
   threshold?: FindingSeverity;
   timeoutMs?: number;
+  ecosystem?: string;
 }
