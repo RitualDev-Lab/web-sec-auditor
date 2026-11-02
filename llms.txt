@@ -1,0 +1,28 @@
+# WebSecAuditor
+> AST Taint Security Scanner & Automated GitHub PR Security Bot
+
+WebSecAuditor is an open-source, enterprise-grade static application security testing (SAST) and dynamic analysis (DAST) engine designed to audit codebases, detect vulnerabilities (SQL injection, XSS, prototype pollution), and comment on pull requests with 1-click remediation patches.
+
+Website: https://ritualdev.in/web-sec-auditor/
+Repository: https://github.com/RitualDev-Lab/web-sec-auditor
+Extension: https://open-vsx.org/extension/ritualdev-lab/ritual-agent-defense
+License: MIT
+
+## Quick Start CLI
+```bash
+# Scan a local repository for AST vulnerabilities and secrets
+npx @ritualdev-lab/web-sec-auditor scan ./src
+
+# Audit a live URL for security headers, SSL, and misconfigurations
+npx @ritualdev-lab/web-sec-auditor probe https://example.com
+
+# Run in CI/CD mode with SARIF v2.1.0 report generation
+npx @ritualdev-lab/web-sec-auditor ci --sarif output.sarif --fail-on high
+```
+
+## Core Security Capabilities
+- **AST Taint Tracking Engine**: Parses TypeScript, JavaScript, and Python ASTs to trace user input from sources (`req.body`, `req.query`, `process.argv`) to dangerous sinks (`eval()`, `exec()`, `innerHTML`, `db.raw()`).
+- **High-Entropy Secret Hunter**: Detects API keys, tokens, and credentials using Shannon entropy analysis (H >= 4.5) alongside certified regex signatures for AWS, GitHub, Stripe, and OpenAI.
+- **Automated GitHub PR Bot**: Functions as an automated senior security reviewer on pull requests. Generates unified git diff patches and blocks merges when CVSS scores breach team thresholds.
+- **OASIS SARIF v2.1.0 Export**: Fully compatible with GitHub Code Scanning, GitLab Security Dashboards, and enterprise SIEM ingestors.
+- **Model Context Protocol (MCP)**: Native tool provider allowing AI coding agents (Claude, Cursor, Windsurf) to self-audit their authored code before committing.

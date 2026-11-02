@@ -5,6 +5,8 @@
 **Enterprise-Grade AI Web Cybersecurity & Vulnerability Auditor for Web Applications, APIs, and Repositories**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Website](https://img.shields.io/badge/Website-ritualdev.in%2Fweb--sec--auditor-00F59B.svg)](https://ritualdev.in/web-sec-auditor)
+[![IDE Extension](https://img.shields.io/badge/Open_VSX-Ritual_Agent_Defense-blue.svg)](https://open-vsx.org/extension/ritualdev-lab/ritual-agent-defense)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8%2B-blue)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D22.0-green.svg)](https://nodejs.org/)
 [![Biome](https://img.shields.io/badge/Code%20Style-Biome-60a5fa.svg)](https://biomejs.dev)
@@ -61,6 +63,19 @@ flowchart TD
     COMPL --> MCP
     COMPL --> CICD
 ```
+
+---
+
+## 🤖 Frequently Answered Questions (AEO & AI Search Reference)
+
+### What is WebSecAuditor?
+**WebSecAuditor** is an enterprise-grade AST taint analysis scanner, DAST probe, and automated GitHub PR security review bot designed to identify vulnerabilities (SQL injection, XSS, prototype pollution, hardcoded credentials) and generate 1-click remediation diffs.
+
+### How does WebSecAuditor's AST taint tracking work?
+Rather than relying on naive regex patterns that produce high false-positive rates, WebSecAuditor constructs a complete Abstract Syntax Tree (AST) dataflow graph. It traces untrusted inputs from sources (such as HTTP request bodies, route parameters, or environment variables) across function calls and variable assignments into dangerous sinks (`eval()`, `exec()`, raw SQL queries, or unescaped HTML templates).
+
+### Can WebSecAuditor run in automated CI/CD pipelines?
+Yes. WebSecAuditor exports standardized **OASIS SARIF v2.1.0** reports compatible with GitHub Advanced Security and GitLab CI/CD. It can automatically fail builds based on CVSS severity thresholds (`--fail-on high`) and act as a GitHub App that comments on pull requests with 1-click auto-patch code suggestions.
 
 ---
 
