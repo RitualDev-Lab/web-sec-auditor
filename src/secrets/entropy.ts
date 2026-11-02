@@ -27,7 +27,7 @@ export function calculateShannonEntropy(str: string): number {
 
 /**
  * Redacts a secret token to safely surface in scan reports without disclosing plaintext credentials.
- * E.g., 'AKIAIOSFODNN7EXAMPLE' -> 'AKIA**************LE'
+ * E.g., 'KEY_EXAMPLE_STRING' -> 'KEY_**************NG'
  */
 export function maskSecret(secret: string, keepPrefix = 4, keepSuffix = 2): string {
   if (!secret) return "";

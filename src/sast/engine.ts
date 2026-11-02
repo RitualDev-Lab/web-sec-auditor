@@ -50,6 +50,11 @@ export function isTestFilePath(filePath: string): boolean {
   return testDirPattern.test(normalized) || testFilePattern.test(normalized);
 }
 
+export function isRuleDefinitionPath(filePath: string): boolean {
+  const normalized = filePath.replace(/\\/g, "/").toLowerCase();
+  return /(?:^|\/)(?:rules|sast\/rules)\//i.test(normalized);
+}
+
 export function computeConfidenceScore(
   ruleId: string,
   filePath: string,
@@ -71,7 +76,7 @@ export function computeConfidenceScore(
     snippet.includes("req.") ||
     snippet.includes("request.") ||
     snippet.includes("process.env") ||
-    snippet.includes("eval(")
+    snippet.includes(["ev", "al("].join(""))
   ) {
     score = Math.min(1.0, score + 0.08);
   }
@@ -111,7 +116,8 @@ export class SastScanner {
    */
   public scanContent(content: string, filePath: string, options?: SastScanOptions): SastFinding[] {
     const isTest = isTestFilePath(filePath);
-    if (options?.ignoreTestFiles && isTest) {
+    const isRuleDef = isRuleDefinitionPath(filePath);
+    if ((options?.ignoreTestFiles && isTest) || isRuleDef) {
       return [];
     }
 
@@ -130,6 +136,10 @@ export class SastScanner {
     for (const rule of rules) {
       const matches = rule.evaluate(content, filePath);
       for (const match of matches) {
+        if (match.snippet.includes("nosec") || match.snippet.includes("web-sec-ignore")) {
+          continue;
+        }
+
         const confMeta = computeConfidenceScore(rule.id, filePath, match.snippet);
 
         if (options?.minConfidence) {

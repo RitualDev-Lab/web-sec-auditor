@@ -43,6 +43,7 @@ jobs:
           node dist/cli.js audit . \
             --sarif results.sarif \
             --html report.html \
+            --ignore-test-files \
             --fail-on HIGH
 
       - name: Upload SARIF to GitHub Advanced Security

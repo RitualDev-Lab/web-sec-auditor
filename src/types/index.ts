@@ -210,6 +210,8 @@ export interface SecretFinding {
   commitAuthor?: string;
   rawSecret?: string;
   verification?: SecretVerificationResult;
+  isTestFile?: boolean;
+  confidence?: "HIGH" | "MEDIUM" | "LOW";
 }
 
 export type SecretVerificationStatus = "ACTIVE" | "REVOKED" | "UNKNOWN";
@@ -244,6 +246,7 @@ export interface SecretScanOptions {
   excludeDirs?: string[];
   maxFileSizeKb?: number;
   verifySecrets?: boolean;
+  ignoreTestFiles?: boolean;
 }
 
 // ─── Phase 3: Software Composition Analysis (SCA) Types ──────

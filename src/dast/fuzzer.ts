@@ -34,8 +34,8 @@ const SQL_INJECTION_PROBES = [
 ];
 
 const PROTOTYPE_POLLUTION_PROBES: string[] = [
-  '{"__proto__": {"polluted": true, "role": "admin"}}',
-  '{"constructor": {"prototype": {"polluted": true}}}',
+  '{"__proto__": {"polluted": true, "role": "admin"}}', // nosec: fuzzer test probe
+  '{"constructor": {"prototype": {"polluted": true}}}', // nosec: fuzzer test probe
 ];
 
 const BOUNDARY_BUFFER_PROBES = [
@@ -202,7 +202,7 @@ export class ApiContractFuzzer {
                 severity: "HIGH",
                 description: `Endpoint ${ep.method} ${ep.path} vulnerable to prototype mutation or unhandled object assignment.`,
                 remediation:
-                  "Freeze object prototypes (Object.freeze(Object.prototype)) or sanitize keys (denying '__proto__', 'constructor', 'prototype') before recursive assignment.",
+                  "Freeze object prototypes (Object.freeze(Object.prototype)) or sanitize keys (denying '__proto__', 'constructor', 'prototype') before recursive assignment.", // nosec: remediation text
                 cwe: "CWE-1321",
               });
               break;

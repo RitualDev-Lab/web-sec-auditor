@@ -448,15 +448,25 @@ async function main() {
         dastReport = await dast.scanUrl(target);
         console.log(renderTextReport(dastReport));
       } else {
+        const ignoreTestFiles = args.includes("--ignore-test-files");
+        const excludeIdx = args.indexOf("--exclude");
+        const excludeDirs =
+          excludeIdx !== -1 && args[excludeIdx + 1] ? args[excludeIdx + 1].split(",") : undefined;
+
         // 1. SAST scan
         const sast = new SastScanner();
-        sastReport = await sast.scanPath(target);
+        sastReport = await sast.scanPath(target, {
+          ignoreTestFiles,
+          excludeDirs,
+        });
         console.log(renderSastTextReport(sastReport, args.includes("--diff")));
 
         // 2. Secret scan
         const hunter = new SecretHunter();
         secretReport = await hunter.scanPath(target, {
           verifySecrets: args.includes("--verify-secrets"),
+          ignoreTestFiles,
+          excludeDirs,
         });
         console.log(renderSecretsTextReport(secretReport));
 
@@ -505,7 +515,9 @@ async function main() {
         ...(secretReport?.findings || []),
         ...(scaReport?.findings || []),
       ];
-      checkFailOn(allFindings, failOnLevel);
+      checkFailOn(allFindings, failOnLevel, {
+        ignoreTestFiles: args.includes("--ignore-test-files"),
+      });
       break;
     }
 
@@ -929,9 +941,8 @@ Waiting for pull_request and issue_comment webhook events...
         console.log(`      Remediation: ${f.remediation}\n`);
       }
 
-      if (failOnLevel && checkFailOn(report.findings as any, failOnLevel)) {
-        console.error(`❌ Security Gate Failed: Findings exceed --fail-on ${failOnLevel}`);
-        process.exit(1);
+      if (failOnLevel) {
+        checkFailOn(report.findings, failOnLevel);
       }
       break;
     }

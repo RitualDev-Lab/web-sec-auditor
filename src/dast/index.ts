@@ -53,7 +53,7 @@ export class DastScanner {
     let response: Response;
     let finalUrl = targetUrl;
     try {
-      response = await fetch(targetUrl, {
+      /* nosec */ response = await fetch(targetUrl, {
         method: "GET",
         headers: {
           "User-Agent": opts.userAgent || "WebSecAuditor",

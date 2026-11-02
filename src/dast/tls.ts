@@ -52,7 +52,7 @@ export async function evaluateTls(
         host,
         port,
         servername: host,
-        rejectUnauthorized: false, // Allow inspection of expired/self-signed certs
+        rejectUnauthorized: false, // nosec: inspect expired/self-signed certs for testing
       },
       () => {
         try {

@@ -200,7 +200,7 @@ export async function verifyAiSecret(
         return {
           status: "UNKNOWN",
           provider: "generic",
-          details: `Provider not supported for automated verification`,
+          details: "Provider not supported for automated verification",
           verifiedAt,
         };
     }

@@ -198,7 +198,7 @@ export class InterFileTaintAnalyzer {
       // Direct assignment: const id = req.params.id;
       for (const pattern of sourcePatterns) {
         const match = line.match(pattern);
-        if (match && match[1]) {
+        if (match?.[1]) {
           sources.push({
             file: filePath,
             line: i + 1,

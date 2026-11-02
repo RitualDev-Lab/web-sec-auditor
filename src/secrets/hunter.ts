@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { promisify } from "node:util";
+import { isTestFilePath } from "../sast/engine.js";
 import type {
   FindingSeverity,
   SecretFinding,
@@ -81,7 +82,7 @@ export class SecretHunter {
       if (provider && f.rawSecret) {
         f.verification = await verifyAiSecret(provider, f.rawSecret, options);
       }
-      delete f.rawSecret;
+      f.rawSecret = undefined;
     }
     return findings;
   }
@@ -93,6 +94,11 @@ export class SecretHunter {
     filePath: string,
     options?: SecretScanOptions,
   ): SecretFinding[] {
+    const isTest = isTestFilePath(filePath);
+    if (options?.ignoreTestFiles && isTest) {
+      return [];
+    }
+
     const findings: SecretFinding[] = [];
     const lines = content.split("\n");
 
@@ -131,6 +137,8 @@ export class SecretHunter {
               remediation:
                 "Revoke and rotate this exposed credential immediately. Store secrets in environment variables or an enterprise secrets manager (e.g. AWS Secrets Manager, GCP Secret Manager, Vault).",
               rawSecret: targetSecret,
+              isTestFile: isTest,
+              confidence: isTest ? "LOW" : "HIGH",
             });
           }
 
@@ -180,7 +188,7 @@ export class SecretHunter {
       await SecretHunter.verifyFindings(allFindings);
     } else {
       for (const f of allFindings) {
-        delete f.rawSecret;
+        f.rawSecret = undefined;
       }
     }
 

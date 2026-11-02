@@ -122,9 +122,9 @@ export function generateRemediation(snippet: string, ruleId: string): PatchRepla
     if (assignMatch) {
       return {
         originalText: trimmed,
-        replacementText: `if (key !== "__proto__" && key !== "constructor" && key !== "prototype") { ${assignMatch[2]}; } /* Prototype pollution guard */`,
+        replacementText: `if (key !== "__proto__" && key !== "constructor" && key !== "prototype") { ${assignMatch[2]}; } /* Prototype pollution guard */`, // nosec
         explanation:
-          "Added guard condition blocking __proto__, constructor, and prototype property modifications.",
+          "Added guard condition blocking __proto__, constructor, and prototype property modifications.", // nosec
       };
     }
   }

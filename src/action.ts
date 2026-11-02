@@ -265,7 +265,7 @@ export class GitHubActionRunner {
           );
           if (sarifUploaded) {
             console.log(
-              `🔒 [WebSecAuditor Action] Uploaded SARIF report to GitHub Security / Code Scanning tab.`,
+              "🔒 [WebSecAuditor Action] Uploaded SARIF report to GitHub Security / Code Scanning tab.",
             );
           }
         } catch (err: unknown) {
