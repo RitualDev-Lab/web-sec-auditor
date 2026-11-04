@@ -21,7 +21,8 @@
     "test": "tsx --test \"tests/**/*.test.ts\"",
     "lint": "biome check .",
     "format": "biome format --write .",
-    "check": "biome check ."
+    "check": "biome check .",
+    "audit:client": "tsx scripts/run-client-audit.ts"
   },
   "keywords": [
     "cybersecurity",
