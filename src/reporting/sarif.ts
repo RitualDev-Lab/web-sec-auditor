@@ -1,3 +1,4 @@
+import type { CpgFinding } from "../sast/cpg-analyzer.js";
 import type {
   DastScanReport,
   FindingSeverity,
@@ -52,12 +53,27 @@ export interface SarifRule {
   };
 }
 
+export interface SarifThreadFlowLocation {
+  location: SarifLocation & { message?: SarifMessage };
+  importance?: "essential" | "important" | "unimportant";
+}
+
+export interface SarifThreadFlow {
+  locations: SarifThreadFlowLocation[];
+}
+
+export interface SarifCodeFlow {
+  message?: SarifMessage;
+  threadFlows: SarifThreadFlow[];
+}
+
 export interface SarifResult {
   ruleId: string;
   ruleIndex?: number;
   level: "error" | "warning" | "note";
   message: SarifMessage;
   locations?: SarifLocation[];
+  codeFlows?: SarifCodeFlow[];
 }
 
 export interface SarifRun {
@@ -96,6 +112,7 @@ export interface GenerateSarifOptions {
   sastReport?: SastScanReport;
   secretReport?: SecretScanReport;
   scaReport?: ScaScanReport;
+  cpgFindings?: CpgFinding[];
 }
 
 /**
@@ -275,6 +292,87 @@ export function generateSarifReport(options: GenerateSarifOptions): SarifLog {
                 uri: options.dastReport.targetUrl,
               },
             },
+          },
+        ],
+      });
+    }
+  }
+
+  // 5. Process Whole-Program Code Property Graph (CPG) Findings
+  if (options.cpgFindings) {
+    for (const cpg of options.cpgFindings) {
+      if (!rulesMap.has(cpg.ruleId)) {
+        rulesMap.set(cpg.ruleId, {
+          id: cpg.ruleId,
+          name: cpg.title,
+          shortDescription: { text: cpg.title },
+          fullDescription: {
+            text: `${cpg.category} detected via whole-program CPG dataflow tracking.`,
+          },
+          defaultConfiguration: {
+            level: severityToSarifLevel(cpg.severity),
+          },
+          help: {
+            text: cpg.remediation,
+            markdown: `### Remediation\n\n${cpg.remediation}\n\n- **CWE**: ${cpg.cwe}\n- **OWASP**: ${cpg.owasp}`,
+          },
+          properties: {
+            tags: ["security", "cpg", "dataflow", cpg.cwe, cpg.owasp],
+          },
+        });
+      }
+
+      const threadFlowLocations: SarifThreadFlowLocation[] = cpg.trace.map((step) => ({
+        location: {
+          physicalLocation: {
+            artifactLocation: {
+              uri: step.file,
+            },
+            region: {
+              startLine: step.line,
+              snippet: {
+                text: step.codeSnippet,
+              },
+            },
+          },
+          message: {
+            text: step.stepDescription,
+          },
+        },
+        importance: "essential",
+      }));
+
+      results.push({
+        ruleId: cpg.ruleId,
+        level: severityToSarifLevel(cpg.severity),
+        message: {
+          text: `[${cpg.category}] Untrusted data flows from source ${cpg.source.file}:${cpg.source.line} to sink ${cpg.sink.file}:${cpg.sink.line}`,
+        },
+        locations: [
+          {
+            physicalLocation: {
+              artifactLocation: {
+                uri: cpg.sink.file,
+              },
+              region: {
+                startLine: cpg.sink.line,
+                snippet: {
+                  text: cpg.sink.code,
+                },
+              },
+            },
+          },
+        ],
+        codeFlows: [
+          {
+            message: {
+              text: `CPG Whole-Program Taint Flow: ${cpg.category}`,
+            },
+            threadFlows: [
+              {
+                locations: threadFlowLocations,
+              },
+            ],
           },
         ],
       });
