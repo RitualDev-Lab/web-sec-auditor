@@ -51,6 +51,7 @@
     "url": "https://github.com/RitualDev-Lab/web-sec-auditor/issues"
   },
   "homepage": "https://github.com/RitualDev-Lab/web-sec-auditor#readme",
+  "packageManager": "pnpm@9.15.4",
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.2",
     "zod": "4.6.7"
