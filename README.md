@@ -1,4 +1,4 @@
-<div align="center">
+﻿<div align="center">
 
 # 🛡️ WebSecAuditor (`web-sec-auditor`)
 
@@ -12,6 +12,7 @@
 [![Biome](https://img.shields.io/badge/Code%20Style-Biome-60a5fa.svg)](https://biomejs.dev)
 [![OWASP Top 10](https://img.shields.io/badge/OWASP-Top%2010%20Compliant-red.svg)](https://owasp.org/www-project-top-ten/)
 [![SARIF v2.1.0](https://img.shields.io/badge/SARIF-v2.1.0%20Export-blueviolet.svg)](https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html)
+[![Sponsor on Dodo Payments](https://img.shields.io/badge/Sponsor-Dodo%20Payments-8b5cf6?style=flat-square&logo=shield&logoColor=white)](https://checkout.dodopayments.com/buy/pdt_0NpjONGugY5QkrFDUaPva)
 [![MCP Protocol](https://img.shields.io/badge/MCP-Native%20Server-brightgreen.svg)](https://modelcontextprotocol.io/)
 [![GitHub App](https://img.shields.io/badge/GitHub%20App-PR%20Bot%20%26%20Auto--Patch-orange.svg)](https://github.com/RitualDev-Lab/web-sec-auditor)
 
@@ -321,6 +322,26 @@ jobs:
 ```
 
 ---
+
+---
+
+## 💖 Sponsor & Support via Dodo Payments
+
+web-sec-auditor is 100% open-source and MIT licensed. Your sponsorship directly finances our DAST/SAST vulnerability detection rules, AST taint-tracking test suites, and automated security patch verification rigs.
+
+<div align="center">
+
+[![Sponsor on Dodo Payments](https://img.shields.io/badge/Sponsor_via_Dodo-Payments-8b5cf6?style=for-the-badge&logo=shield&logoColor=white)](https://checkout.dodopayments.com/buy/pdt_0NpjONGugY5QkrFDUaPva)
+[![Interactive Donation Portal](https://img.shields.io/badge/Donation_Portal-Cards%20%7C%20UPI%20%7C%20Apple%20Pay-ff5964?style=for-the-badge&logo=heart&logoColor=white)](https://ritualdev.in/donate)
+[![GitHub Sponsors](https://img.shields.io/badge/GitHub_Sponsors-RitualDev--Lab-ea4aaa?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/RitualDev-Lab)
+
+<br/>
+
+[**⚡ 1-Click Dodo Payments Checkout**](https://checkout.dodopayments.com/buy/pdt_0NpjONGugY5QkrFDUaPva) &nbsp;•&nbsp; [**🎁 Interactive Donation Form (USD & INR UPI)**](https://ritualdev.in/donate) &nbsp;•&nbsp; [**❤️ GitHub Sponsors**](https://github.com/sponsors/RitualDev-Lab)
+
+<sub>🔒 *Zero physical shipping required. Powered by Dodo Payments (Merchant of Record) with instant tax invoice and global payment methods (Cards, UPI, Apple Pay).*</sub>
+
+</div>
 
 ## 📄 License
 MIT © [RitualDev Lab](https://github.com/RitualDev-Lab)
