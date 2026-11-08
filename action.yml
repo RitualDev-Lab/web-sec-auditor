@@ -78,10 +78,12 @@ runs:
       run: |
         node -e '
           import("${{ github.action_path }}/dist/action.js")
-            .then(m => new m.GitHubActionRunner().run())
-            .then(res => {
-              console.log("::set-output name=passed::" + res.passed);
-              console.log("::set-output name=findings-count::" + res.totalFindings);
+            .then(async m => {
+              const res = await new m.GitHubActionRunner().run();
+              if (process.env.GITHUB_OUTPUT) {
+                const fs = await import("node:fs/promises");
+                await fs.appendFile(process.env.GITHUB_OUTPUT, `passed=${res.passed}\nfindings-count=${res.totalFindings}\n`);
+              }
               if (!res.passed) {
                 console.error("❌ WebSecAuditor gate failed on severity threshold!");
                 process.exit(1);
@@ -95,7 +97,7 @@ runs:
 
     - name: Upload SARIF to GitHub Security Tab (Fallback)
       if: always() && inputs.upload-sarif == 'true'
-      uses: github/codeql-action/upload-sarif@v3
+      uses: github/codeql-action/upload-sarif@b56ba49b26e50535fa1e7f7db0f4f7b4bf65d80d # v3.28.10
       with:
         sarif_file: ${{ inputs.sarif-file }}
         category: web-sec-auditor

@@ -68,6 +68,28 @@ export interface SarifCodeFlow {
   threadFlows: SarifThreadFlow[];
 }
 
+export interface SarifReplacement {
+  deletedRegion: {
+    startLine: number;
+    startColumn?: number;
+    endLine?: number;
+    endColumn?: number;
+  };
+  insertedContent?: {
+    text: string;
+  };
+}
+
+export interface SarifArtifactChange {
+  artifactLocation: SarifArtifactLocation;
+  replacements: SarifReplacement[];
+}
+
+export interface SarifFix {
+  description: SarifMessage;
+  artifactChanges: SarifArtifactChange[];
+}
+
 export interface SarifResult {
   ruleId: string;
   ruleIndex?: number;
@@ -76,9 +98,15 @@ export interface SarifResult {
   locations?: SarifLocation[];
   codeFlows?: SarifCodeFlow[];
   partialFingerprints?: Record<string, string>;
+  fixes?: SarifFix[];
 }
 
-function computeFindingFingerprint(ruleId: string, uri: string, line: number, snippet?: string): string {
+function computeFindingFingerprint(
+  ruleId: string,
+  uri: string,
+  line: number,
+  snippet?: string,
+): string {
   return crypto
     .createHash("sha256")
     .update(`${ruleId}:${uri}:${line}:${snippet || ""}`)
@@ -154,6 +182,40 @@ export function generateSarifReport(options: GenerateSarifOptions): SarifLog {
       }
 
       const sastFp = computeFindingFingerprint(f.ruleId, f.file, f.line, f.snippet);
+
+      let fixes: SarifFix[] | undefined;
+      if (f.patch?.diff) {
+        const diffLines = f.patch.diff.split("\n");
+        const addedLine = diffLines.find((l) => l.startsWith("+") && !l.startsWith("+++"));
+        if (addedLine !== undefined) {
+          const replacementText = addedLine.substring(1);
+          fixes = [
+            {
+              description: {
+                text: f.patch.explanation || `Automated remediation patch for ${f.ruleId}`,
+              },
+              artifactChanges: [
+                {
+                  artifactLocation: {
+                    uri: f.file.replace(/\\/g, "/"),
+                  },
+                  replacements: [
+                    {
+                      deletedRegion: {
+                        startLine: f.line,
+                      },
+                      insertedContent: {
+                        text: replacementText,
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          ];
+        }
+      }
+
       results.push({
         ruleId: f.ruleId,
         level: severityToSarifLevel(f.severity),
@@ -164,6 +226,7 @@ export function generateSarifReport(options: GenerateSarifOptions): SarifLog {
           primaryLocationLineHash: sastFp.slice(0, 32),
           "authenticatedFindingHash/v1": sastFp,
         },
+        ...(fixes ? { fixes } : {}),
         locations: [
           {
             physicalLocation: {
@@ -258,7 +321,12 @@ export function generateSarifReport(options: GenerateSarifOptions): SarifLog {
         });
       }
 
-      const scaFp = computeFindingFingerprint(sca.id, options.scaReport.manifestPath, 1, sca.packageName);
+      const scaFp = computeFindingFingerprint(
+        sca.id,
+        options.scaReport.manifestPath,
+        1,
+        sca.packageName,
+      );
       results.push({
         ruleId: sca.id,
         level: severityToSarifLevel(sca.severity),
@@ -303,7 +371,12 @@ export function generateSarifReport(options: GenerateSarifOptions): SarifLog {
         });
       }
 
-      const dastFp = computeFindingFingerprint(d.id, options.dastReport.targetUrl, 1, d.description);
+      const dastFp = computeFindingFingerprint(
+        d.id,
+        options.dastReport.targetUrl,
+        1,
+        d.description,
+      );
       results.push({
         ruleId: d.id,
         level: severityToSarifLevel(d.severity),
@@ -371,7 +444,12 @@ export function generateSarifReport(options: GenerateSarifOptions): SarifLog {
         importance: "essential",
       }));
 
-      const cpgFp = computeFindingFingerprint(cpg.ruleId, cpg.sink.file, cpg.sink.line, cpg.sink.code);
+      const cpgFp = computeFindingFingerprint(
+        cpg.ruleId,
+        cpg.sink.file,
+        cpg.sink.line,
+        cpg.sink.code,
+      );
       results.push({
         ruleId: cpg.ruleId,
         level: severityToSarifLevel(cpg.severity),
