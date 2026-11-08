@@ -128,6 +128,57 @@ describe("Phase 3 (WebSecAuditor): Standardized SARIF 2.1.0 Artifacts with CodeF
     assert.equal(threadFlow.locations[0].importance, "essential");
     assert.ok(threadFlow.locations[0].location.physicalLocation.region?.startLine);
   });
+
+  it("exports SARIF v2.1.0 with 1-click automated fixes when SAST findings contain patches", () => {
+    const sarif = generateSarifReport({
+      sastReport: {
+        timestamp: new Date().toISOString(),
+        scannedFiles: 1,
+        totalFindings: 1,
+        summary: { critical: 1, high: 0, medium: 0, low: 0, info: 0 },
+        findings: [
+          {
+            id: "SAST-001",
+            ruleId: "SQLI-01",
+            category: "INJECTION",
+            title: "SQL Injection in Query Concatenation",
+            severity: "CRITICAL",
+            cwe: "CWE-89",
+            owasp: "A03:2021-Injection",
+            file: "src/user.ts",
+            line: 42,
+            column: 5,
+            snippet: "db.query('SELECT * FROM users WHERE id = ' + req.query.id);",
+            description: "Direct SQL string concatenation allows arbitrary SQL injection.",
+            remediation: "Use parameterized queries ($1) instead of concatenation.",
+            patch: {
+              diff: [
+                "--- a/src/user.ts",
+                "+++ b/src/user.ts",
+                "@@ -42,1 +42,1 @@",
+                "-db.query('SELECT * FROM users WHERE id = ' + req.query.id);",
+                "+db.query('SELECT * FROM users WHERE id = $1', [req.query.id]);",
+              ].join("\n"),
+              explanation: "Replaced raw string concatenation with parameterized SQL placeholder.",
+            },
+          },
+        ],
+      },
+    });
+
+    const run = sarif.runs[0];
+    const result = run.results.find((r) => r.ruleId === "SQLI-01");
+    assert.ok(result, "Expected SQLI-01 result");
+    assert.ok(result.fixes && result.fixes.length > 0, "Expected fixes array in SARIF result");
+    const fix = result.fixes[0];
+    assert.equal(fix.artifactChanges.length, 1);
+    assert.equal(fix.artifactChanges[0].artifactLocation.uri, "src/user.ts");
+    assert.equal(fix.artifactChanges[0].replacements.length, 1);
+    assert.equal(
+      fix.artifactChanges[0].replacements[0].insertedContent?.text,
+      "db.query('SELECT * FROM users WHERE id = $1', [req.query.id]);",
+    );
+  });
 });
 
 describe("Phase 3 (WebSecAuditor): Cryptographically Signed Remediation Engine", () => {
