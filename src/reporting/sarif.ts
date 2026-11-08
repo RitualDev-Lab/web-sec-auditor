@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import type { CpgFinding } from "../sast/cpg-analyzer.js";
 import type {
   DastScanReport,
@@ -74,6 +75,14 @@ export interface SarifResult {
   message: SarifMessage;
   locations?: SarifLocation[];
   codeFlows?: SarifCodeFlow[];
+  partialFingerprints?: Record<string, string>;
+}
+
+function computeFindingFingerprint(ruleId: string, uri: string, line: number, snippet?: string): string {
+  return crypto
+    .createHash("sha256")
+    .update(`${ruleId}:${uri}:${line}:${snippet || ""}`)
+    .digest("hex");
 }
 
 export interface SarifRun {
@@ -144,11 +153,16 @@ export function generateSarifReport(options: GenerateSarifOptions): SarifLog {
         });
       }
 
+      const sastFp = computeFindingFingerprint(f.ruleId, f.file, f.line, f.snippet);
       results.push({
         ruleId: f.ruleId,
         level: severityToSarifLevel(f.severity),
         message: {
           text: `${f.title}: ${f.description}`,
+        },
+        partialFingerprints: {
+          primaryLocationLineHash: sastFp.slice(0, 32),
+          "authenticatedFindingHash/v1": sastFp,
         },
         locations: [
           {
@@ -191,11 +205,16 @@ export function generateSarifReport(options: GenerateSarifOptions): SarifLog {
         });
       }
 
+      const secFp = computeFindingFingerprint(s.patternId, s.file, s.line, s.snippet);
       results.push({
         ruleId: s.patternId,
         level: severityToSarifLevel(s.severity),
         message: {
           text: `Exposed ${s.title}: ${s.maskedSecret}`,
+        },
+        partialFingerprints: {
+          primaryLocationLineHash: secFp.slice(0, 32),
+          "authenticatedFindingHash/v1": secFp,
         },
         locations: [
           {
@@ -239,11 +258,16 @@ export function generateSarifReport(options: GenerateSarifOptions): SarifLog {
         });
       }
 
+      const scaFp = computeFindingFingerprint(sca.id, options.scaReport.manifestPath, 1, sca.packageName);
       results.push({
         ruleId: sca.id,
         level: severityToSarifLevel(sca.severity),
         message: {
           text: `Vulnerable dependency ${sca.packageName}@${sca.currentVersion}: ${sca.title}`,
+        },
+        partialFingerprints: {
+          primaryLocationLineHash: scaFp.slice(0, 32),
+          "authenticatedFindingHash/v1": scaFp,
         },
         locations: [
           {
@@ -279,11 +303,16 @@ export function generateSarifReport(options: GenerateSarifOptions): SarifLog {
         });
       }
 
+      const dastFp = computeFindingFingerprint(d.id, options.dastReport.targetUrl, 1, d.description);
       results.push({
         ruleId: d.id,
         level: severityToSarifLevel(d.severity),
         message: {
           text: `${d.title} on ${options.dastReport.targetUrl}: ${d.description}`,
+        },
+        partialFingerprints: {
+          primaryLocationLineHash: dastFp.slice(0, 32),
+          "authenticatedFindingHash/v1": dastFp,
         },
         locations: [
           {
@@ -342,11 +371,16 @@ export function generateSarifReport(options: GenerateSarifOptions): SarifLog {
         importance: "essential",
       }));
 
+      const cpgFp = computeFindingFingerprint(cpg.ruleId, cpg.sink.file, cpg.sink.line, cpg.sink.code);
       results.push({
         ruleId: cpg.ruleId,
         level: severityToSarifLevel(cpg.severity),
         message: {
           text: `[${cpg.category}] Untrusted data flows from source ${cpg.source.file}:${cpg.source.line} to sink ${cpg.sink.file}:${cpg.sink.line}`,
+        },
+        partialFingerprints: {
+          primaryLocationLineHash: cpgFp.slice(0, 32),
+          "authenticatedFindingHash/v1": cpgFp,
         },
         locations: [
           {
