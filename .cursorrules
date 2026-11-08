@@ -1,0 +1,4 @@
+# Cursor AI Rules for WebSecAuditor
+- Maintain OASIS SARIF v2.1.0 schema compliance for all static analysis findings.
+- Ensure AST visitor functions never enter infinite recursion or catastrophic backtracking regexes.
+- Keep CLI scanning performance blazing fast (< 3s per 10k lines of code).
