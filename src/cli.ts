@@ -518,6 +518,13 @@ async function main() {
       checkFailOn(allFindings, failOnLevel, {
         ignoreTestFiles: args.includes("--ignore-test-files"),
       });
+
+      console.log(`
+─────────────────────────────────────────────────────────────
+💡 Need an official SOC 2 / ISO 27001 manual security audit or custom pentest?
+   Book a Professional AI Security Audit ($199): https://ritualdev.in/audit
+─────────────────────────────────────────────────────────────
+`);
       break;
     }
 
