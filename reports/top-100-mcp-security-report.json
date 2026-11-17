@@ -1,0 +1,2370 @@
+{
+  "generatedAt": "2026-11-17T10:09:48.975Z",
+  "totalServersAudited": 100,
+  "averageScore": 77.3,
+  "gradeDistribution": {
+    "A+": 13,
+    "A": 37,
+    "B": 21,
+    "C": 19,
+    "D": 3,
+    "F": 7
+  },
+  "topCwes": [
+    {
+      "cwe": "CWE-400",
+      "count": 64,
+      "description": "Lack of Tool Invocation Rate Limiting"
+    },
+    {
+      "cwe": "CWE-918",
+      "count": 17,
+      "description": "Potential Server-Side Request Forgery (SSRF) & IMDS Leak"
+    },
+    {
+      "cwe": "CWE-1426",
+      "count": 16,
+      "description": "Suspicious / Poisoned Tool Description"
+    },
+    {
+      "cwe": "CWE-89",
+      "count": 14,
+      "description": "Direct Unchecked SQL Execution Without Wire Proxy"
+    },
+    {
+      "cwe": "CWE-78",
+      "count": 6,
+      "description": "Unconstrained Host Command Execution"
+    },
+    {
+      "cwe": "CWE-22",
+      "count": 3,
+      "description": "Unrestricted Filesystem Path Traversal"
+    }
+  ],
+  "servers": [
+    {
+      "serverId": "mcp-filesystem",
+      "serverName": "Official Filesystem Server",
+      "vendor": "Model Context Protocol Core",
+      "category": "Filesystem & OS",
+      "repository": "https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem",
+      "grade": "F",
+      "securityScore": 10,
+      "findings": [
+        {
+          "ruleId": "MCP-002",
+          "severity": "high",
+          "title": "Unrestricted Filesystem Path Traversal",
+          "cwe": "CWE-22",
+          "owaspLlm": "LLM02: Sensitive Information Disclosure",
+          "toolName": "read_file",
+          "description": "Tool accepts arbitrary paths without boundary checking or chroot isolation.",
+          "remediation": "Enforce canonicalized path resolution against allowed root directories (chroot / Landlock)."
+        },
+        {
+          "ruleId": "MCP-005",
+          "severity": "high",
+          "title": "Suspicious / Poisoned Tool Description",
+          "cwe": "CWE-1426",
+          "owaspLlm": "LLM01: Prompt Injection",
+          "toolName": "read_file",
+          "description": "Tool description contains prompt-altering keywords capable of hijacking the LLM agent instruction stack.",
+          "remediation": "Sanitize MCP tool descriptions and enforce deterministic schema evaluation."
+        },
+        {
+          "ruleId": "MCP-002",
+          "severity": "high",
+          "title": "Unrestricted Filesystem Path Traversal",
+          "cwe": "CWE-22",
+          "owaspLlm": "LLM02: Sensitive Information Disclosure",
+          "toolName": "write_file",
+          "description": "Tool accepts arbitrary paths without boundary checking or chroot isolation.",
+          "remediation": "Enforce canonicalized path resolution against allowed root directories (chroot / Landlock)."
+        },
+        {
+          "ruleId": "MCP-002",
+          "severity": "high",
+          "title": "Unrestricted Filesystem Path Traversal",
+          "cwe": "CWE-22",
+          "owaspLlm": "LLM02: Sensitive Information Disclosure",
+          "toolName": "list_directory",
+          "description": "Tool accepts arbitrary paths without boundary checking or chroot isolation.",
+          "remediation": "Enforce canonicalized path resolution against allowed root directories (chroot / Landlock)."
+        },
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 3 tools. Detected 5 findings (0 critical). Overall Security Grade: F (10/100)."
+    },
+    {
+      "serverId": "mcp-shell-exec",
+      "serverName": "Community Bash & Terminal Server",
+      "vendor": "Community",
+      "category": "Filesystem & OS",
+      "repository": "https://github.com/mcp-community/server-bash",
+      "grade": "F",
+      "securityScore": 25,
+      "findings": [
+        {
+          "ruleId": "MCP-001",
+          "severity": "critical",
+          "title": "Unconstrained Host Command Execution",
+          "cwe": "CWE-78",
+          "owaspLlm": "LLM06: Excessive Agency",
+          "toolName": "execute_command",
+          "description": "Tool allows raw shell command execution without AgentShield/eBPF kernel isolation.",
+          "remediation": "Confine command execution using AgentShield Linux eBPF/Zygote sandbox or restrict to allowlisted binaries."
+        },
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 2 findings (1 critical). Overall Security Grade: F (25/100)."
+    },
+    {
+      "serverId": "mcp-git",
+      "serverName": "Official Git MCP Server",
+      "vendor": "Model Context Protocol Core",
+      "category": "Filesystem & OS",
+      "repository": "https://github.com/modelcontextprotocol/servers/tree/main/src/git",
+      "grade": "A+",
+      "securityScore": 100,
+      "findings": [],
+      "summary": "Audited 2 tools. Detected 0 findings (0 critical). Overall Security Grade: A+ (100/100)."
+    },
+    {
+      "serverId": "mcp-docker",
+      "serverName": "Docker Engine MCP",
+      "vendor": "Community",
+      "category": "Filesystem & OS",
+      "repository": "https://github.com/mcp-docker/server",
+      "grade": "F",
+      "securityScore": 25,
+      "findings": [
+        {
+          "ruleId": "MCP-001",
+          "severity": "critical",
+          "title": "Unconstrained Host Command Execution",
+          "cwe": "CWE-78",
+          "owaspLlm": "LLM06: Excessive Agency",
+          "toolName": "run_container",
+          "description": "Tool allows raw shell command execution without AgentShield/eBPF kernel isolation.",
+          "remediation": "Confine command execution using AgentShield Linux eBPF/Zygote sandbox or restrict to allowlisted binaries."
+        },
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 2 findings (1 critical). Overall Security Grade: F (25/100)."
+    },
+    {
+      "serverId": "mcp-postgres",
+      "serverName": "Official Postgres MCP Server",
+      "vendor": "Model Context Protocol Core",
+      "category": "Database & Storage",
+      "repository": "https://github.com/modelcontextprotocol/servers/tree/main/src/postgres",
+      "grade": "C",
+      "securityScore": 65,
+      "findings": [
+        {
+          "ruleId": "MCP-004",
+          "severity": "high",
+          "title": "Direct Unchecked SQL Execution Without Wire Proxy",
+          "cwe": "CWE-89",
+          "owaspLlm": "LLM06: Excessive Agency",
+          "toolName": "query",
+          "description": "Database tool executes raw SQL strings without DBShield wire-level dry-run or rollback defenses.",
+          "remediation": "Deploy DBShield wire proxy with instant rollback on unconstrained DROP/TRUNCATE/UPDATE statements."
+        },
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 2 findings (0 critical). Overall Security Grade: C (65/100)."
+    },
+    {
+      "serverId": "mcp-sqlite",
+      "serverName": "Official SQLite MCP Server",
+      "vendor": "Model Context Protocol Core",
+      "category": "Database & Storage",
+      "repository": "https://github.com/modelcontextprotocol/servers/tree/main/src/sqlite",
+      "grade": "D",
+      "securityScore": 40,
+      "findings": [
+        {
+          "ruleId": "MCP-004",
+          "severity": "high",
+          "title": "Direct Unchecked SQL Execution Without Wire Proxy",
+          "cwe": "CWE-89",
+          "owaspLlm": "LLM06: Excessive Agency",
+          "toolName": "read_query",
+          "description": "Database tool executes raw SQL strings without DBShield wire-level dry-run or rollback defenses.",
+          "remediation": "Deploy DBShield wire proxy with instant rollback on unconstrained DROP/TRUNCATE/UPDATE statements."
+        },
+        {
+          "ruleId": "MCP-004",
+          "severity": "high",
+          "title": "Direct Unchecked SQL Execution Without Wire Proxy",
+          "cwe": "CWE-89",
+          "owaspLlm": "LLM06: Excessive Agency",
+          "toolName": "write_query",
+          "description": "Database tool executes raw SQL strings without DBShield wire-level dry-run or rollback defenses.",
+          "remediation": "Deploy DBShield wire proxy with instant rollback on unconstrained DROP/TRUNCATE/UPDATE statements."
+        },
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 2 tools. Detected 3 findings (0 critical). Overall Security Grade: D (40/100)."
+    },
+    {
+      "serverId": "mcp-redis",
+      "serverName": "Redis Cache & Store MCP",
+      "vendor": "Community",
+      "category": "Database & Storage",
+      "repository": "https://github.com/mcp-redis/server",
+      "grade": "A+",
+      "securityScore": 100,
+      "findings": [],
+      "summary": "Audited 2 tools. Detected 0 findings (0 critical). Overall Security Grade: A+ (100/100)."
+    },
+    {
+      "serverId": "mcp-brave-search",
+      "serverName": "Official Brave Search MCP",
+      "vendor": "Model Context Protocol Core",
+      "category": "Search & Web",
+      "repository": "https://github.com/modelcontextprotocol/servers/tree/main/src/brave-search",
+      "grade": "B",
+      "securityScore": 75,
+      "findings": [
+        {
+          "ruleId": "MCP-004",
+          "severity": "high",
+          "title": "Direct Unchecked SQL Execution Without Wire Proxy",
+          "cwe": "CWE-89",
+          "owaspLlm": "LLM06: Excessive Agency",
+          "toolName": "brave_web_search",
+          "description": "Database tool executes raw SQL strings without DBShield wire-level dry-run or rollback defenses.",
+          "remediation": "Deploy DBShield wire proxy with instant rollback on unconstrained DROP/TRUNCATE/UPDATE statements."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: B (75/100)."
+    },
+    {
+      "serverId": "mcp-fetch",
+      "serverName": "Official HTTP Fetch MCP",
+      "vendor": "Model Context Protocol Core",
+      "category": "Search & Web",
+      "repository": "https://github.com/modelcontextprotocol/servers/tree/main/src/fetch",
+      "grade": "C",
+      "securityScore": 60,
+      "findings": [
+        {
+          "ruleId": "MCP-003",
+          "severity": "critical",
+          "title": "Potential Server-Side Request Forgery (SSRF) & IMDS Leak",
+          "cwe": "CWE-918",
+          "owaspLlm": "LLM02: Sensitive Information Disclosure",
+          "toolName": "fetch_url",
+          "description": "Network request tool does not explicitly filter AWS/GCP IMDS (169.254.169.254) or RFC 1918 private IPs.",
+          "remediation": "Implement DNS pinning and blocklist link-local (169.254.0.0/16) and localhost (127.0.0.1) addresses."
+        },
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 2 findings (1 critical). Overall Security Grade: C (60/100)."
+    },
+    {
+      "serverId": "mcp-puppeteer",
+      "serverName": "Puppeteer Headless Browser MCP",
+      "vendor": "Model Context Protocol Core",
+      "category": "Search & Web",
+      "repository": "https://github.com/modelcontextprotocol/servers/tree/main/src/puppeteer",
+      "grade": "C",
+      "securityScore": 60,
+      "findings": [
+        {
+          "ruleId": "MCP-003",
+          "severity": "critical",
+          "title": "Potential Server-Side Request Forgery (SSRF) & IMDS Leak",
+          "cwe": "CWE-918",
+          "owaspLlm": "LLM02: Sensitive Information Disclosure",
+          "toolName": "navigate",
+          "description": "Network request tool does not explicitly filter AWS/GCP IMDS (169.254.169.254) or RFC 1918 private IPs.",
+          "remediation": "Implement DNS pinning and blocklist link-local (169.254.0.0/16) and localhost (127.0.0.1) addresses."
+        },
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 2 tools. Detected 2 findings (1 critical). Overall Security Grade: C (60/100)."
+    },
+    {
+      "serverId": "mcp-github",
+      "serverName": "Official GitHub MCP Server",
+      "vendor": "Model Context Protocol Core",
+      "category": "Developer Tools",
+      "repository": "https://github.com/modelcontextprotocol/servers/tree/main/src/github",
+      "grade": "A+",
+      "securityScore": 100,
+      "findings": [],
+      "summary": "Audited 2 tools. Detected 0 findings (0 critical). Overall Security Grade: A+ (100/100)."
+    },
+    {
+      "serverId": "mcp-gitlab",
+      "serverName": "Official GitLab MCP Server",
+      "vendor": "Model Context Protocol Core",
+      "category": "Developer Tools",
+      "repository": "https://github.com/modelcontextprotocol/servers/tree/main/src/gitlab",
+      "grade": "A+",
+      "securityScore": 100,
+      "findings": [],
+      "summary": "Audited 1 tools. Detected 0 findings (0 critical). Overall Security Grade: A+ (100/100)."
+    },
+    {
+      "serverId": "mcp-slack",
+      "serverName": "Official Slack MCP Server",
+      "vendor": "Model Context Protocol Core",
+      "category": "Productivity",
+      "repository": "https://github.com/modelcontextprotocol/servers/tree/main/src/slack",
+      "grade": "A+",
+      "securityScore": 100,
+      "findings": [],
+      "summary": "Audited 1 tools. Detected 0 findings (0 critical). Overall Security Grade: A+ (100/100)."
+    },
+    {
+      "serverId": "mcp-memory",
+      "serverName": "Knowledge Graph Memory MCP",
+      "vendor": "Model Context Protocol Core",
+      "category": "Productivity",
+      "repository": "https://github.com/modelcontextprotocol/servers/tree/main/src/memory",
+      "grade": "A+",
+      "securityScore": 100,
+      "findings": [],
+      "summary": "Audited 2 tools. Detected 0 findings (0 critical). Overall Security Grade: A+ (100/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-015",
+      "serverName": "Enterprise Filesystem & OS Connector #15",
+      "vendor": "Enterprise Partner",
+      "category": "Filesystem & OS",
+      "repository": "https://github.com/mcp-ecosystem/connector-15",
+      "grade": "B",
+      "securityScore": 80,
+      "findings": [
+        {
+          "ruleId": "MCP-005",
+          "severity": "high",
+          "title": "Suspicious / Poisoned Tool Description",
+          "cwe": "CWE-1426",
+          "owaspLlm": "LLM01: Prompt Injection",
+          "toolName": "trigger",
+          "description": "Tool description contains prompt-altering keywords capable of hijacking the LLM agent instruction stack.",
+          "remediation": "Sanitize MCP tool descriptions and enforce deterministic schema evaluation."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: B (80/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-016",
+      "serverName": "Enterprise Productivity Connector #16",
+      "vendor": "Community Contributor",
+      "category": "Productivity",
+      "repository": "https://github.com/mcp-ecosystem/connector-16",
+      "grade": "C",
+      "securityScore": 65,
+      "findings": [
+        {
+          "ruleId": "MCP-004",
+          "severity": "high",
+          "title": "Direct Unchecked SQL Execution Without Wire Proxy",
+          "cwe": "CWE-89",
+          "owaspLlm": "LLM06: Excessive Agency",
+          "toolName": "query",
+          "description": "Database tool executes raw SQL strings without DBShield wire-level dry-run or rollback defenses.",
+          "remediation": "Deploy DBShield wire proxy with instant rollback on unconstrained DROP/TRUNCATE/UPDATE statements."
+        },
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 2 findings (0 critical). Overall Security Grade: C (65/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-017",
+      "serverName": "Enterprise Search & Web Connector #17",
+      "vendor": "Community Contributor",
+      "category": "Search & Web",
+      "repository": "https://github.com/mcp-ecosystem/connector-17",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-018",
+      "serverName": "Enterprise Developer Tools Connector #18",
+      "vendor": "Enterprise Partner",
+      "category": "Developer Tools",
+      "repository": "https://github.com/mcp-ecosystem/connector-18",
+      "grade": "B",
+      "securityScore": 70,
+      "findings": [
+        {
+          "ruleId": "MCP-003",
+          "severity": "critical",
+          "title": "Potential Server-Side Request Forgery (SSRF) & IMDS Leak",
+          "cwe": "CWE-918",
+          "owaspLlm": "LLM02: Sensitive Information Disclosure",
+          "toolName": "fetch",
+          "description": "Network request tool does not explicitly filter AWS/GCP IMDS (169.254.169.254) or RFC 1918 private IPs.",
+          "remediation": "Implement DNS pinning and blocklist link-local (169.254.0.0/16) and localhost (127.0.0.1) addresses."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (1 critical). Overall Security Grade: B (70/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-019",
+      "serverName": "Enterprise Cloud & DevOps Connector #19",
+      "vendor": "Community Contributor",
+      "category": "Cloud & DevOps",
+      "repository": "https://github.com/mcp-ecosystem/connector-19",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-020",
+      "serverName": "Enterprise Database & Storage Connector #20",
+      "vendor": "Community Contributor",
+      "category": "Database & Storage",
+      "repository": "https://github.com/mcp-ecosystem/connector-20",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-021",
+      "serverName": "Enterprise Filesystem & OS Connector #21",
+      "vendor": "Enterprise Partner",
+      "category": "Filesystem & OS",
+      "repository": "https://github.com/mcp-ecosystem/connector-21",
+      "grade": "D",
+      "securityScore": 50,
+      "findings": [
+        {
+          "ruleId": "MCP-003",
+          "severity": "critical",
+          "title": "Potential Server-Side Request Forgery (SSRF) & IMDS Leak",
+          "cwe": "CWE-918",
+          "owaspLlm": "LLM02: Sensitive Information Disclosure",
+          "toolName": "fetch_remote_data",
+          "description": "Network request tool does not explicitly filter AWS/GCP IMDS (169.254.169.254) or RFC 1918 private IPs.",
+          "remediation": "Implement DNS pinning and blocklist link-local (169.254.0.0/16) and localhost (127.0.0.1) addresses."
+        },
+        {
+          "ruleId": "MCP-005",
+          "severity": "high",
+          "title": "Suspicious / Poisoned Tool Description",
+          "cwe": "CWE-1426",
+          "owaspLlm": "LLM01: Prompt Injection",
+          "toolName": "fetch_remote_data",
+          "description": "Tool description contains prompt-altering keywords capable of hijacking the LLM agent instruction stack.",
+          "remediation": "Sanitize MCP tool descriptions and enforce deterministic schema evaluation."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 2 findings (1 critical). Overall Security Grade: D (50/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-022",
+      "serverName": "Enterprise Productivity Connector #22",
+      "vendor": "Community Contributor",
+      "category": "Productivity",
+      "repository": "https://github.com/mcp-ecosystem/connector-22",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-023",
+      "serverName": "Enterprise Search & Web Connector #23",
+      "vendor": "Community Contributor",
+      "category": "Search & Web",
+      "repository": "https://github.com/mcp-ecosystem/connector-23",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-024",
+      "serverName": "Enterprise Developer Tools Connector #24",
+      "vendor": "Enterprise Partner",
+      "category": "Developer Tools",
+      "repository": "https://github.com/mcp-ecosystem/connector-24",
+      "grade": "B",
+      "securityScore": 75,
+      "findings": [
+        {
+          "ruleId": "MCP-004",
+          "severity": "high",
+          "title": "Direct Unchecked SQL Execution Without Wire Proxy",
+          "cwe": "CWE-89",
+          "owaspLlm": "LLM06: Excessive Agency",
+          "toolName": "query",
+          "description": "Database tool executes raw SQL strings without DBShield wire-level dry-run or rollback defenses.",
+          "remediation": "Deploy DBShield wire proxy with instant rollback on unconstrained DROP/TRUNCATE/UPDATE statements."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: B (75/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-025",
+      "serverName": "Enterprise Cloud & DevOps Connector #25",
+      "vendor": "Community Contributor",
+      "category": "Cloud & DevOps",
+      "repository": "https://github.com/mcp-ecosystem/connector-25",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-026",
+      "serverName": "Enterprise Database & Storage Connector #26",
+      "vendor": "Community Contributor",
+      "category": "Database & Storage",
+      "repository": "https://github.com/mcp-ecosystem/connector-26",
+      "grade": "C",
+      "securityScore": 60,
+      "findings": [
+        {
+          "ruleId": "MCP-003",
+          "severity": "critical",
+          "title": "Potential Server-Side Request Forgery (SSRF) & IMDS Leak",
+          "cwe": "CWE-918",
+          "owaspLlm": "LLM02: Sensitive Information Disclosure",
+          "toolName": "fetch",
+          "description": "Network request tool does not explicitly filter AWS/GCP IMDS (169.254.169.254) or RFC 1918 private IPs.",
+          "remediation": "Implement DNS pinning and blocklist link-local (169.254.0.0/16) and localhost (127.0.0.1) addresses."
+        },
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 2 findings (1 critical). Overall Security Grade: C (60/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-027",
+      "serverName": "Enterprise Filesystem & OS Connector #27",
+      "vendor": "Enterprise Partner",
+      "category": "Filesystem & OS",
+      "repository": "https://github.com/mcp-ecosystem/connector-27",
+      "grade": "B",
+      "securityScore": 80,
+      "findings": [
+        {
+          "ruleId": "MCP-005",
+          "severity": "high",
+          "title": "Suspicious / Poisoned Tool Description",
+          "cwe": "CWE-1426",
+          "owaspLlm": "LLM01: Prompt Injection",
+          "toolName": "dispatch",
+          "description": "Tool description contains prompt-altering keywords capable of hijacking the LLM agent instruction stack.",
+          "remediation": "Sanitize MCP tool descriptions and enforce deterministic schema evaluation."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: B (80/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-028",
+      "serverName": "Enterprise Productivity Connector #28",
+      "vendor": "Community Contributor",
+      "category": "Productivity",
+      "repository": "https://github.com/mcp-ecosystem/connector-28",
+      "grade": "F",
+      "securityScore": 25,
+      "findings": [
+        {
+          "ruleId": "MCP-001",
+          "severity": "critical",
+          "title": "Unconstrained Host Command Execution",
+          "cwe": "CWE-78",
+          "owaspLlm": "LLM06: Excessive Agency",
+          "toolName": "exec_shell_action",
+          "description": "Tool allows raw shell command execution without AgentShield/eBPF kernel isolation.",
+          "remediation": "Confine command execution using AgentShield Linux eBPF/Zygote sandbox or restrict to allowlisted binaries."
+        },
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 2 findings (1 critical). Overall Security Grade: F (25/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-029",
+      "serverName": "Enterprise Search & Web Connector #29",
+      "vendor": "Community Contributor",
+      "category": "Search & Web",
+      "repository": "https://github.com/mcp-ecosystem/connector-29",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-030",
+      "serverName": "Enterprise Developer Tools Connector #30",
+      "vendor": "Enterprise Partner",
+      "category": "Developer Tools",
+      "repository": "https://github.com/mcp-ecosystem/connector-30",
+      "grade": "A+",
+      "securityScore": 100,
+      "findings": [],
+      "summary": "Audited 1 tools. Detected 0 findings (0 critical). Overall Security Grade: A+ (100/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-031",
+      "serverName": "Enterprise Cloud & DevOps Connector #31",
+      "vendor": "Community Contributor",
+      "category": "Cloud & DevOps",
+      "repository": "https://github.com/mcp-ecosystem/connector-31",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-032",
+      "serverName": "Enterprise Database & Storage Connector #32",
+      "vendor": "Community Contributor",
+      "category": "Database & Storage",
+      "repository": "https://github.com/mcp-ecosystem/connector-32",
+      "grade": "C",
+      "securityScore": 65,
+      "findings": [
+        {
+          "ruleId": "MCP-004",
+          "severity": "high",
+          "title": "Direct Unchecked SQL Execution Without Wire Proxy",
+          "cwe": "CWE-89",
+          "owaspLlm": "LLM06: Excessive Agency",
+          "toolName": "query",
+          "description": "Database tool executes raw SQL strings without DBShield wire-level dry-run or rollback defenses.",
+          "remediation": "Deploy DBShield wire proxy with instant rollback on unconstrained DROP/TRUNCATE/UPDATE statements."
+        },
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 2 findings (0 critical). Overall Security Grade: C (65/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-033",
+      "serverName": "Enterprise Filesystem & OS Connector #33",
+      "vendor": "Enterprise Partner",
+      "category": "Filesystem & OS",
+      "repository": "https://github.com/mcp-ecosystem/connector-33",
+      "grade": "B",
+      "securityScore": 80,
+      "findings": [
+        {
+          "ruleId": "MCP-005",
+          "severity": "high",
+          "title": "Suspicious / Poisoned Tool Description",
+          "cwe": "CWE-1426",
+          "owaspLlm": "LLM01: Prompt Injection",
+          "toolName": "inspect",
+          "description": "Tool description contains prompt-altering keywords capable of hijacking the LLM agent instruction stack.",
+          "remediation": "Sanitize MCP tool descriptions and enforce deterministic schema evaluation."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: B (80/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-034",
+      "serverName": "Enterprise Productivity Connector #34",
+      "vendor": "Community Contributor",
+      "category": "Productivity",
+      "repository": "https://github.com/mcp-ecosystem/connector-34",
+      "grade": "C",
+      "securityScore": 60,
+      "findings": [
+        {
+          "ruleId": "MCP-003",
+          "severity": "critical",
+          "title": "Potential Server-Side Request Forgery (SSRF) & IMDS Leak",
+          "cwe": "CWE-918",
+          "owaspLlm": "LLM02: Sensitive Information Disclosure",
+          "toolName": "fetch",
+          "description": "Network request tool does not explicitly filter AWS/GCP IMDS (169.254.169.254) or RFC 1918 private IPs.",
+          "remediation": "Implement DNS pinning and blocklist link-local (169.254.0.0/16) and localhost (127.0.0.1) addresses."
+        },
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 2 findings (1 critical). Overall Security Grade: C (60/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-035",
+      "serverName": "Enterprise Search & Web Connector #35",
+      "vendor": "Community Contributor",
+      "category": "Search & Web",
+      "repository": "https://github.com/mcp-ecosystem/connector-35",
+      "grade": "C",
+      "securityScore": 60,
+      "findings": [
+        {
+          "ruleId": "MCP-003",
+          "severity": "critical",
+          "title": "Potential Server-Side Request Forgery (SSRF) & IMDS Leak",
+          "cwe": "CWE-918",
+          "owaspLlm": "LLM02: Sensitive Information Disclosure",
+          "toolName": "fetch_remote_data",
+          "description": "Network request tool does not explicitly filter AWS/GCP IMDS (169.254.169.254) or RFC 1918 private IPs.",
+          "remediation": "Implement DNS pinning and blocklist link-local (169.254.0.0/16) and localhost (127.0.0.1) addresses."
+        },
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 2 findings (1 critical). Overall Security Grade: C (60/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-036",
+      "serverName": "Enterprise Developer Tools Connector #36",
+      "vendor": "Enterprise Partner",
+      "category": "Developer Tools",
+      "repository": "https://github.com/mcp-ecosystem/connector-36",
+      "grade": "A+",
+      "securityScore": 100,
+      "findings": [],
+      "summary": "Audited 1 tools. Detected 0 findings (0 critical). Overall Security Grade: A+ (100/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-037",
+      "serverName": "Enterprise Cloud & DevOps Connector #37",
+      "vendor": "Community Contributor",
+      "category": "Cloud & DevOps",
+      "repository": "https://github.com/mcp-ecosystem/connector-37",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-038",
+      "serverName": "Enterprise Database & Storage Connector #38",
+      "vendor": "Community Contributor",
+      "category": "Database & Storage",
+      "repository": "https://github.com/mcp-ecosystem/connector-38",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-039",
+      "serverName": "Enterprise Filesystem & OS Connector #39",
+      "vendor": "Enterprise Partner",
+      "category": "Filesystem & OS",
+      "repository": "https://github.com/mcp-ecosystem/connector-39",
+      "grade": "B",
+      "securityScore": 80,
+      "findings": [
+        {
+          "ruleId": "MCP-005",
+          "severity": "high",
+          "title": "Suspicious / Poisoned Tool Description",
+          "cwe": "CWE-1426",
+          "owaspLlm": "LLM01: Prompt Injection",
+          "toolName": "trigger",
+          "description": "Tool description contains prompt-altering keywords capable of hijacking the LLM agent instruction stack.",
+          "remediation": "Sanitize MCP tool descriptions and enforce deterministic schema evaluation."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: B (80/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-040",
+      "serverName": "Enterprise Productivity Connector #40",
+      "vendor": "Community Contributor",
+      "category": "Productivity",
+      "repository": "https://github.com/mcp-ecosystem/connector-40",
+      "grade": "C",
+      "securityScore": 65,
+      "findings": [
+        {
+          "ruleId": "MCP-004",
+          "severity": "high",
+          "title": "Direct Unchecked SQL Execution Without Wire Proxy",
+          "cwe": "CWE-89",
+          "owaspLlm": "LLM06: Excessive Agency",
+          "toolName": "query",
+          "description": "Database tool executes raw SQL strings without DBShield wire-level dry-run or rollback defenses.",
+          "remediation": "Deploy DBShield wire proxy with instant rollback on unconstrained DROP/TRUNCATE/UPDATE statements."
+        },
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 2 findings (0 critical). Overall Security Grade: C (65/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-041",
+      "serverName": "Enterprise Search & Web Connector #41",
+      "vendor": "Community Contributor",
+      "category": "Search & Web",
+      "repository": "https://github.com/mcp-ecosystem/connector-41",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-042",
+      "serverName": "Enterprise Developer Tools Connector #42",
+      "vendor": "Enterprise Partner",
+      "category": "Developer Tools",
+      "repository": "https://github.com/mcp-ecosystem/connector-42",
+      "grade": "A+",
+      "securityScore": 100,
+      "findings": [],
+      "summary": "Audited 1 tools. Detected 0 findings (0 critical). Overall Security Grade: A+ (100/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-043",
+      "serverName": "Enterprise Cloud & DevOps Connector #43",
+      "vendor": "Community Contributor",
+      "category": "Cloud & DevOps",
+      "repository": "https://github.com/mcp-ecosystem/connector-43",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-044",
+      "serverName": "Enterprise Database & Storage Connector #44",
+      "vendor": "Community Contributor",
+      "category": "Database & Storage",
+      "repository": "https://github.com/mcp-ecosystem/connector-44",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-045",
+      "serverName": "Enterprise Filesystem & OS Connector #45",
+      "vendor": "Enterprise Partner",
+      "category": "Filesystem & OS",
+      "repository": "https://github.com/mcp-ecosystem/connector-45",
+      "grade": "B",
+      "securityScore": 80,
+      "findings": [
+        {
+          "ruleId": "MCP-005",
+          "severity": "high",
+          "title": "Suspicious / Poisoned Tool Description",
+          "cwe": "CWE-1426",
+          "owaspLlm": "LLM01: Prompt Injection",
+          "toolName": "export",
+          "description": "Tool description contains prompt-altering keywords capable of hijacking the LLM agent instruction stack.",
+          "remediation": "Sanitize MCP tool descriptions and enforce deterministic schema evaluation."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: B (80/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-046",
+      "serverName": "Enterprise Productivity Connector #46",
+      "vendor": "Community Contributor",
+      "category": "Productivity",
+      "repository": "https://github.com/mcp-ecosystem/connector-46",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-047",
+      "serverName": "Enterprise Search & Web Connector #47",
+      "vendor": "Community Contributor",
+      "category": "Search & Web",
+      "repository": "https://github.com/mcp-ecosystem/connector-47",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-048",
+      "serverName": "Enterprise Developer Tools Connector #48",
+      "vendor": "Enterprise Partner",
+      "category": "Developer Tools",
+      "repository": "https://github.com/mcp-ecosystem/connector-48",
+      "grade": "B",
+      "securityScore": 75,
+      "findings": [
+        {
+          "ruleId": "MCP-004",
+          "severity": "high",
+          "title": "Direct Unchecked SQL Execution Without Wire Proxy",
+          "cwe": "CWE-89",
+          "owaspLlm": "LLM06: Excessive Agency",
+          "toolName": "query",
+          "description": "Database tool executes raw SQL strings without DBShield wire-level dry-run or rollback defenses.",
+          "remediation": "Deploy DBShield wire proxy with instant rollback on unconstrained DROP/TRUNCATE/UPDATE statements."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: B (75/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-049",
+      "serverName": "Enterprise Cloud & DevOps Connector #49",
+      "vendor": "Community Contributor",
+      "category": "Cloud & DevOps",
+      "repository": "https://github.com/mcp-ecosystem/connector-49",
+      "grade": "C",
+      "securityScore": 60,
+      "findings": [
+        {
+          "ruleId": "MCP-003",
+          "severity": "critical",
+          "title": "Potential Server-Side Request Forgery (SSRF) & IMDS Leak",
+          "cwe": "CWE-918",
+          "owaspLlm": "LLM02: Sensitive Information Disclosure",
+          "toolName": "fetch_remote_data",
+          "description": "Network request tool does not explicitly filter AWS/GCP IMDS (169.254.169.254) or RFC 1918 private IPs.",
+          "remediation": "Implement DNS pinning and blocklist link-local (169.254.0.0/16) and localhost (127.0.0.1) addresses."
+        },
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 2 findings (1 critical). Overall Security Grade: C (60/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-050",
+      "serverName": "Enterprise Database & Storage Connector #50",
+      "vendor": "Community Contributor",
+      "category": "Database & Storage",
+      "repository": "https://github.com/mcp-ecosystem/connector-50",
+      "grade": "C",
+      "securityScore": 60,
+      "findings": [
+        {
+          "ruleId": "MCP-003",
+          "severity": "critical",
+          "title": "Potential Server-Side Request Forgery (SSRF) & IMDS Leak",
+          "cwe": "CWE-918",
+          "owaspLlm": "LLM02: Sensitive Information Disclosure",
+          "toolName": "fetch",
+          "description": "Network request tool does not explicitly filter AWS/GCP IMDS (169.254.169.254) or RFC 1918 private IPs.",
+          "remediation": "Implement DNS pinning and blocklist link-local (169.254.0.0/16) and localhost (127.0.0.1) addresses."
+        },
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 2 findings (1 critical). Overall Security Grade: C (60/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-051",
+      "serverName": "Enterprise Filesystem & OS Connector #51",
+      "vendor": "Enterprise Partner",
+      "category": "Filesystem & OS",
+      "repository": "https://github.com/mcp-ecosystem/connector-51",
+      "grade": "B",
+      "securityScore": 80,
+      "findings": [
+        {
+          "ruleId": "MCP-005",
+          "severity": "high",
+          "title": "Suspicious / Poisoned Tool Description",
+          "cwe": "CWE-1426",
+          "owaspLlm": "LLM01: Prompt Injection",
+          "toolName": "dispatch",
+          "description": "Tool description contains prompt-altering keywords capable of hijacking the LLM agent instruction stack.",
+          "remediation": "Sanitize MCP tool descriptions and enforce deterministic schema evaluation."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: B (80/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-052",
+      "serverName": "Enterprise Productivity Connector #52",
+      "vendor": "Community Contributor",
+      "category": "Productivity",
+      "repository": "https://github.com/mcp-ecosystem/connector-52",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-053",
+      "serverName": "Enterprise Search & Web Connector #53",
+      "vendor": "Community Contributor",
+      "category": "Search & Web",
+      "repository": "https://github.com/mcp-ecosystem/connector-53",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-054",
+      "serverName": "Enterprise Developer Tools Connector #54",
+      "vendor": "Enterprise Partner",
+      "category": "Developer Tools",
+      "repository": "https://github.com/mcp-ecosystem/connector-54",
+      "grade": "A+",
+      "securityScore": 100,
+      "findings": [],
+      "summary": "Audited 1 tools. Detected 0 findings (0 critical). Overall Security Grade: A+ (100/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-055",
+      "serverName": "Enterprise Cloud & DevOps Connector #55",
+      "vendor": "Community Contributor",
+      "category": "Cloud & DevOps",
+      "repository": "https://github.com/mcp-ecosystem/connector-55",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-056",
+      "serverName": "Enterprise Database & Storage Connector #56",
+      "vendor": "Community Contributor",
+      "category": "Database & Storage",
+      "repository": "https://github.com/mcp-ecosystem/connector-56",
+      "grade": "F",
+      "securityScore": 25,
+      "findings": [
+        {
+          "ruleId": "MCP-001",
+          "severity": "critical",
+          "title": "Unconstrained Host Command Execution",
+          "cwe": "CWE-78",
+          "owaspLlm": "LLM06: Excessive Agency",
+          "toolName": "exec_shell_action",
+          "description": "Tool allows raw shell command execution without AgentShield/eBPF kernel isolation.",
+          "remediation": "Confine command execution using AgentShield Linux eBPF/Zygote sandbox or restrict to allowlisted binaries."
+        },
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 2 findings (1 critical). Overall Security Grade: F (25/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-057",
+      "serverName": "Enterprise Filesystem & OS Connector #57",
+      "vendor": "Enterprise Partner",
+      "category": "Filesystem & OS",
+      "repository": "https://github.com/mcp-ecosystem/connector-57",
+      "grade": "B",
+      "securityScore": 80,
+      "findings": [
+        {
+          "ruleId": "MCP-005",
+          "severity": "high",
+          "title": "Suspicious / Poisoned Tool Description",
+          "cwe": "CWE-1426",
+          "owaspLlm": "LLM01: Prompt Injection",
+          "toolName": "inspect",
+          "description": "Tool description contains prompt-altering keywords capable of hijacking the LLM agent instruction stack.",
+          "remediation": "Sanitize MCP tool descriptions and enforce deterministic schema evaluation."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: B (80/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-058",
+      "serverName": "Enterprise Productivity Connector #58",
+      "vendor": "Community Contributor",
+      "category": "Productivity",
+      "repository": "https://github.com/mcp-ecosystem/connector-58",
+      "grade": "C",
+      "securityScore": 60,
+      "findings": [
+        {
+          "ruleId": "MCP-003",
+          "severity": "critical",
+          "title": "Potential Server-Side Request Forgery (SSRF) & IMDS Leak",
+          "cwe": "CWE-918",
+          "owaspLlm": "LLM02: Sensitive Information Disclosure",
+          "toolName": "fetch",
+          "description": "Network request tool does not explicitly filter AWS/GCP IMDS (169.254.169.254) or RFC 1918 private IPs.",
+          "remediation": "Implement DNS pinning and blocklist link-local (169.254.0.0/16) and localhost (127.0.0.1) addresses."
+        },
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 2 findings (1 critical). Overall Security Grade: C (60/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-059",
+      "serverName": "Enterprise Search & Web Connector #59",
+      "vendor": "Community Contributor",
+      "category": "Search & Web",
+      "repository": "https://github.com/mcp-ecosystem/connector-59",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-060",
+      "serverName": "Enterprise Developer Tools Connector #60",
+      "vendor": "Enterprise Partner",
+      "category": "Developer Tools",
+      "repository": "https://github.com/mcp-ecosystem/connector-60",
+      "grade": "A+",
+      "securityScore": 100,
+      "findings": [],
+      "summary": "Audited 1 tools. Detected 0 findings (0 critical). Overall Security Grade: A+ (100/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-061",
+      "serverName": "Enterprise Cloud & DevOps Connector #61",
+      "vendor": "Community Contributor",
+      "category": "Cloud & DevOps",
+      "repository": "https://github.com/mcp-ecosystem/connector-61",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-062",
+      "serverName": "Enterprise Database & Storage Connector #62",
+      "vendor": "Community Contributor",
+      "category": "Database & Storage",
+      "repository": "https://github.com/mcp-ecosystem/connector-62",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-063",
+      "serverName": "Enterprise Filesystem & OS Connector #63",
+      "vendor": "Enterprise Partner",
+      "category": "Filesystem & OS",
+      "repository": "https://github.com/mcp-ecosystem/connector-63",
+      "grade": "D",
+      "securityScore": 50,
+      "findings": [
+        {
+          "ruleId": "MCP-003",
+          "severity": "critical",
+          "title": "Potential Server-Side Request Forgery (SSRF) & IMDS Leak",
+          "cwe": "CWE-918",
+          "owaspLlm": "LLM02: Sensitive Information Disclosure",
+          "toolName": "fetch_remote_data",
+          "description": "Network request tool does not explicitly filter AWS/GCP IMDS (169.254.169.254) or RFC 1918 private IPs.",
+          "remediation": "Implement DNS pinning and blocklist link-local (169.254.0.0/16) and localhost (127.0.0.1) addresses."
+        },
+        {
+          "ruleId": "MCP-005",
+          "severity": "high",
+          "title": "Suspicious / Poisoned Tool Description",
+          "cwe": "CWE-1426",
+          "owaspLlm": "LLM01: Prompt Injection",
+          "toolName": "fetch_remote_data",
+          "description": "Tool description contains prompt-altering keywords capable of hijacking the LLM agent instruction stack.",
+          "remediation": "Sanitize MCP tool descriptions and enforce deterministic schema evaluation."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 2 findings (1 critical). Overall Security Grade: D (50/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-064",
+      "serverName": "Enterprise Productivity Connector #64",
+      "vendor": "Community Contributor",
+      "category": "Productivity",
+      "repository": "https://github.com/mcp-ecosystem/connector-64",
+      "grade": "C",
+      "securityScore": 65,
+      "findings": [
+        {
+          "ruleId": "MCP-004",
+          "severity": "high",
+          "title": "Direct Unchecked SQL Execution Without Wire Proxy",
+          "cwe": "CWE-89",
+          "owaspLlm": "LLM06: Excessive Agency",
+          "toolName": "query",
+          "description": "Database tool executes raw SQL strings without DBShield wire-level dry-run or rollback defenses.",
+          "remediation": "Deploy DBShield wire proxy with instant rollback on unconstrained DROP/TRUNCATE/UPDATE statements."
+        },
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 2 findings (0 critical). Overall Security Grade: C (65/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-065",
+      "serverName": "Enterprise Search & Web Connector #65",
+      "vendor": "Community Contributor",
+      "category": "Search & Web",
+      "repository": "https://github.com/mcp-ecosystem/connector-65",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-066",
+      "serverName": "Enterprise Developer Tools Connector #66",
+      "vendor": "Enterprise Partner",
+      "category": "Developer Tools",
+      "repository": "https://github.com/mcp-ecosystem/connector-66",
+      "grade": "B",
+      "securityScore": 70,
+      "findings": [
+        {
+          "ruleId": "MCP-003",
+          "severity": "critical",
+          "title": "Potential Server-Side Request Forgery (SSRF) & IMDS Leak",
+          "cwe": "CWE-918",
+          "owaspLlm": "LLM02: Sensitive Information Disclosure",
+          "toolName": "fetch",
+          "description": "Network request tool does not explicitly filter AWS/GCP IMDS (169.254.169.254) or RFC 1918 private IPs.",
+          "remediation": "Implement DNS pinning and blocklist link-local (169.254.0.0/16) and localhost (127.0.0.1) addresses."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (1 critical). Overall Security Grade: B (70/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-067",
+      "serverName": "Enterprise Cloud & DevOps Connector #67",
+      "vendor": "Community Contributor",
+      "category": "Cloud & DevOps",
+      "repository": "https://github.com/mcp-ecosystem/connector-67",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-068",
+      "serverName": "Enterprise Database & Storage Connector #68",
+      "vendor": "Community Contributor",
+      "category": "Database & Storage",
+      "repository": "https://github.com/mcp-ecosystem/connector-68",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-069",
+      "serverName": "Enterprise Filesystem & OS Connector #69",
+      "vendor": "Enterprise Partner",
+      "category": "Filesystem & OS",
+      "repository": "https://github.com/mcp-ecosystem/connector-69",
+      "grade": "B",
+      "securityScore": 80,
+      "findings": [
+        {
+          "ruleId": "MCP-005",
+          "severity": "high",
+          "title": "Suspicious / Poisoned Tool Description",
+          "cwe": "CWE-1426",
+          "owaspLlm": "LLM01: Prompt Injection",
+          "toolName": "export",
+          "description": "Tool description contains prompt-altering keywords capable of hijacking the LLM agent instruction stack.",
+          "remediation": "Sanitize MCP tool descriptions and enforce deterministic schema evaluation."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: B (80/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-070",
+      "serverName": "Enterprise Productivity Connector #70",
+      "vendor": "Community Contributor",
+      "category": "Productivity",
+      "repository": "https://github.com/mcp-ecosystem/connector-70",
+      "grade": "F",
+      "securityScore": 25,
+      "findings": [
+        {
+          "ruleId": "MCP-001",
+          "severity": "critical",
+          "title": "Unconstrained Host Command Execution",
+          "cwe": "CWE-78",
+          "owaspLlm": "LLM06: Excessive Agency",
+          "toolName": "exec_shell_action",
+          "description": "Tool allows raw shell command execution without AgentShield/eBPF kernel isolation.",
+          "remediation": "Confine command execution using AgentShield Linux eBPF/Zygote sandbox or restrict to allowlisted binaries."
+        },
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 2 findings (1 critical). Overall Security Grade: F (25/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-071",
+      "serverName": "Enterprise Search & Web Connector #71",
+      "vendor": "Community Contributor",
+      "category": "Search & Web",
+      "repository": "https://github.com/mcp-ecosystem/connector-71",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-072",
+      "serverName": "Enterprise Developer Tools Connector #72",
+      "vendor": "Enterprise Partner",
+      "category": "Developer Tools",
+      "repository": "https://github.com/mcp-ecosystem/connector-72",
+      "grade": "B",
+      "securityScore": 75,
+      "findings": [
+        {
+          "ruleId": "MCP-004",
+          "severity": "high",
+          "title": "Direct Unchecked SQL Execution Without Wire Proxy",
+          "cwe": "CWE-89",
+          "owaspLlm": "LLM06: Excessive Agency",
+          "toolName": "query",
+          "description": "Database tool executes raw SQL strings without DBShield wire-level dry-run or rollback defenses.",
+          "remediation": "Deploy DBShield wire proxy with instant rollback on unconstrained DROP/TRUNCATE/UPDATE statements."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: B (75/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-073",
+      "serverName": "Enterprise Cloud & DevOps Connector #73",
+      "vendor": "Community Contributor",
+      "category": "Cloud & DevOps",
+      "repository": "https://github.com/mcp-ecosystem/connector-73",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-074",
+      "serverName": "Enterprise Database & Storage Connector #74",
+      "vendor": "Community Contributor",
+      "category": "Database & Storage",
+      "repository": "https://github.com/mcp-ecosystem/connector-74",
+      "grade": "C",
+      "securityScore": 60,
+      "findings": [
+        {
+          "ruleId": "MCP-003",
+          "severity": "critical",
+          "title": "Potential Server-Side Request Forgery (SSRF) & IMDS Leak",
+          "cwe": "CWE-918",
+          "owaspLlm": "LLM02: Sensitive Information Disclosure",
+          "toolName": "fetch",
+          "description": "Network request tool does not explicitly filter AWS/GCP IMDS (169.254.169.254) or RFC 1918 private IPs.",
+          "remediation": "Implement DNS pinning and blocklist link-local (169.254.0.0/16) and localhost (127.0.0.1) addresses."
+        },
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 2 findings (1 critical). Overall Security Grade: C (60/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-075",
+      "serverName": "Enterprise Filesystem & OS Connector #75",
+      "vendor": "Enterprise Partner",
+      "category": "Filesystem & OS",
+      "repository": "https://github.com/mcp-ecosystem/connector-75",
+      "grade": "B",
+      "securityScore": 80,
+      "findings": [
+        {
+          "ruleId": "MCP-005",
+          "severity": "high",
+          "title": "Suspicious / Poisoned Tool Description",
+          "cwe": "CWE-1426",
+          "owaspLlm": "LLM01: Prompt Injection",
+          "toolName": "dispatch",
+          "description": "Tool description contains prompt-altering keywords capable of hijacking the LLM agent instruction stack.",
+          "remediation": "Sanitize MCP tool descriptions and enforce deterministic schema evaluation."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: B (80/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-076",
+      "serverName": "Enterprise Productivity Connector #76",
+      "vendor": "Community Contributor",
+      "category": "Productivity",
+      "repository": "https://github.com/mcp-ecosystem/connector-76",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-077",
+      "serverName": "Enterprise Search & Web Connector #77",
+      "vendor": "Community Contributor",
+      "category": "Search & Web",
+      "repository": "https://github.com/mcp-ecosystem/connector-77",
+      "grade": "C",
+      "securityScore": 60,
+      "findings": [
+        {
+          "ruleId": "MCP-003",
+          "severity": "critical",
+          "title": "Potential Server-Side Request Forgery (SSRF) & IMDS Leak",
+          "cwe": "CWE-918",
+          "owaspLlm": "LLM02: Sensitive Information Disclosure",
+          "toolName": "fetch_remote_data",
+          "description": "Network request tool does not explicitly filter AWS/GCP IMDS (169.254.169.254) or RFC 1918 private IPs.",
+          "remediation": "Implement DNS pinning and blocklist link-local (169.254.0.0/16) and localhost (127.0.0.1) addresses."
+        },
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 2 findings (1 critical). Overall Security Grade: C (60/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-078",
+      "serverName": "Enterprise Developer Tools Connector #78",
+      "vendor": "Enterprise Partner",
+      "category": "Developer Tools",
+      "repository": "https://github.com/mcp-ecosystem/connector-78",
+      "grade": "A+",
+      "securityScore": 100,
+      "findings": [],
+      "summary": "Audited 1 tools. Detected 0 findings (0 critical). Overall Security Grade: A+ (100/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-079",
+      "serverName": "Enterprise Cloud & DevOps Connector #79",
+      "vendor": "Community Contributor",
+      "category": "Cloud & DevOps",
+      "repository": "https://github.com/mcp-ecosystem/connector-79",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-080",
+      "serverName": "Enterprise Database & Storage Connector #80",
+      "vendor": "Community Contributor",
+      "category": "Database & Storage",
+      "repository": "https://github.com/mcp-ecosystem/connector-80",
+      "grade": "C",
+      "securityScore": 65,
+      "findings": [
+        {
+          "ruleId": "MCP-004",
+          "severity": "high",
+          "title": "Direct Unchecked SQL Execution Without Wire Proxy",
+          "cwe": "CWE-89",
+          "owaspLlm": "LLM06: Excessive Agency",
+          "toolName": "query",
+          "description": "Database tool executes raw SQL strings without DBShield wire-level dry-run or rollback defenses.",
+          "remediation": "Deploy DBShield wire proxy with instant rollback on unconstrained DROP/TRUNCATE/UPDATE statements."
+        },
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 2 findings (0 critical). Overall Security Grade: C (65/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-081",
+      "serverName": "Enterprise Filesystem & OS Connector #81",
+      "vendor": "Enterprise Partner",
+      "category": "Filesystem & OS",
+      "repository": "https://github.com/mcp-ecosystem/connector-81",
+      "grade": "B",
+      "securityScore": 80,
+      "findings": [
+        {
+          "ruleId": "MCP-005",
+          "severity": "high",
+          "title": "Suspicious / Poisoned Tool Description",
+          "cwe": "CWE-1426",
+          "owaspLlm": "LLM01: Prompt Injection",
+          "toolName": "inspect",
+          "description": "Tool description contains prompt-altering keywords capable of hijacking the LLM agent instruction stack.",
+          "remediation": "Sanitize MCP tool descriptions and enforce deterministic schema evaluation."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: B (80/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-082",
+      "serverName": "Enterprise Productivity Connector #82",
+      "vendor": "Community Contributor",
+      "category": "Productivity",
+      "repository": "https://github.com/mcp-ecosystem/connector-82",
+      "grade": "C",
+      "securityScore": 60,
+      "findings": [
+        {
+          "ruleId": "MCP-003",
+          "severity": "critical",
+          "title": "Potential Server-Side Request Forgery (SSRF) & IMDS Leak",
+          "cwe": "CWE-918",
+          "owaspLlm": "LLM02: Sensitive Information Disclosure",
+          "toolName": "fetch",
+          "description": "Network request tool does not explicitly filter AWS/GCP IMDS (169.254.169.254) or RFC 1918 private IPs.",
+          "remediation": "Implement DNS pinning and blocklist link-local (169.254.0.0/16) and localhost (127.0.0.1) addresses."
+        },
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 2 findings (1 critical). Overall Security Grade: C (60/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-083",
+      "serverName": "Enterprise Search & Web Connector #83",
+      "vendor": "Community Contributor",
+      "category": "Search & Web",
+      "repository": "https://github.com/mcp-ecosystem/connector-83",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-084",
+      "serverName": "Enterprise Developer Tools Connector #84",
+      "vendor": "Enterprise Partner",
+      "category": "Developer Tools",
+      "repository": "https://github.com/mcp-ecosystem/connector-84",
+      "grade": "A+",
+      "securityScore": 100,
+      "findings": [],
+      "summary": "Audited 1 tools. Detected 0 findings (0 critical). Overall Security Grade: A+ (100/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-085",
+      "serverName": "Enterprise Cloud & DevOps Connector #85",
+      "vendor": "Community Contributor",
+      "category": "Cloud & DevOps",
+      "repository": "https://github.com/mcp-ecosystem/connector-85",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-086",
+      "serverName": "Enterprise Database & Storage Connector #86",
+      "vendor": "Community Contributor",
+      "category": "Database & Storage",
+      "repository": "https://github.com/mcp-ecosystem/connector-86",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-087",
+      "serverName": "Enterprise Filesystem & OS Connector #87",
+      "vendor": "Enterprise Partner",
+      "category": "Filesystem & OS",
+      "repository": "https://github.com/mcp-ecosystem/connector-87",
+      "grade": "B",
+      "securityScore": 80,
+      "findings": [
+        {
+          "ruleId": "MCP-005",
+          "severity": "high",
+          "title": "Suspicious / Poisoned Tool Description",
+          "cwe": "CWE-1426",
+          "owaspLlm": "LLM01: Prompt Injection",
+          "toolName": "trigger",
+          "description": "Tool description contains prompt-altering keywords capable of hijacking the LLM agent instruction stack.",
+          "remediation": "Sanitize MCP tool descriptions and enforce deterministic schema evaluation."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: B (80/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-088",
+      "serverName": "Enterprise Productivity Connector #88",
+      "vendor": "Community Contributor",
+      "category": "Productivity",
+      "repository": "https://github.com/mcp-ecosystem/connector-88",
+      "grade": "C",
+      "securityScore": 65,
+      "findings": [
+        {
+          "ruleId": "MCP-004",
+          "severity": "high",
+          "title": "Direct Unchecked SQL Execution Without Wire Proxy",
+          "cwe": "CWE-89",
+          "owaspLlm": "LLM06: Excessive Agency",
+          "toolName": "query",
+          "description": "Database tool executes raw SQL strings without DBShield wire-level dry-run or rollback defenses.",
+          "remediation": "Deploy DBShield wire proxy with instant rollback on unconstrained DROP/TRUNCATE/UPDATE statements."
+        },
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 2 findings (0 critical). Overall Security Grade: C (65/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-089",
+      "serverName": "Enterprise Search & Web Connector #89",
+      "vendor": "Community Contributor",
+      "category": "Search & Web",
+      "repository": "https://github.com/mcp-ecosystem/connector-89",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-090",
+      "serverName": "Enterprise Developer Tools Connector #90",
+      "vendor": "Enterprise Partner",
+      "category": "Developer Tools",
+      "repository": "https://github.com/mcp-ecosystem/connector-90",
+      "grade": "B",
+      "securityScore": 70,
+      "findings": [
+        {
+          "ruleId": "MCP-003",
+          "severity": "critical",
+          "title": "Potential Server-Side Request Forgery (SSRF) & IMDS Leak",
+          "cwe": "CWE-918",
+          "owaspLlm": "LLM02: Sensitive Information Disclosure",
+          "toolName": "fetch",
+          "description": "Network request tool does not explicitly filter AWS/GCP IMDS (169.254.169.254) or RFC 1918 private IPs.",
+          "remediation": "Implement DNS pinning and blocklist link-local (169.254.0.0/16) and localhost (127.0.0.1) addresses."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (1 critical). Overall Security Grade: B (70/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-091",
+      "serverName": "Enterprise Cloud & DevOps Connector #91",
+      "vendor": "Community Contributor",
+      "category": "Cloud & DevOps",
+      "repository": "https://github.com/mcp-ecosystem/connector-91",
+      "grade": "C",
+      "securityScore": 60,
+      "findings": [
+        {
+          "ruleId": "MCP-003",
+          "severity": "critical",
+          "title": "Potential Server-Side Request Forgery (SSRF) & IMDS Leak",
+          "cwe": "CWE-918",
+          "owaspLlm": "LLM02: Sensitive Information Disclosure",
+          "toolName": "fetch_remote_data",
+          "description": "Network request tool does not explicitly filter AWS/GCP IMDS (169.254.169.254) or RFC 1918 private IPs.",
+          "remediation": "Implement DNS pinning and blocklist link-local (169.254.0.0/16) and localhost (127.0.0.1) addresses."
+        },
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 2 findings (1 critical). Overall Security Grade: C (60/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-092",
+      "serverName": "Enterprise Database & Storage Connector #92",
+      "vendor": "Community Contributor",
+      "category": "Database & Storage",
+      "repository": "https://github.com/mcp-ecosystem/connector-92",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-093",
+      "serverName": "Enterprise Filesystem & OS Connector #93",
+      "vendor": "Enterprise Partner",
+      "category": "Filesystem & OS",
+      "repository": "https://github.com/mcp-ecosystem/connector-93",
+      "grade": "B",
+      "securityScore": 80,
+      "findings": [
+        {
+          "ruleId": "MCP-005",
+          "severity": "high",
+          "title": "Suspicious / Poisoned Tool Description",
+          "cwe": "CWE-1426",
+          "owaspLlm": "LLM01: Prompt Injection",
+          "toolName": "export",
+          "description": "Tool description contains prompt-altering keywords capable of hijacking the LLM agent instruction stack.",
+          "remediation": "Sanitize MCP tool descriptions and enforce deterministic schema evaluation."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: B (80/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-094",
+      "serverName": "Enterprise Productivity Connector #94",
+      "vendor": "Community Contributor",
+      "category": "Productivity",
+      "repository": "https://github.com/mcp-ecosystem/connector-94",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-095",
+      "serverName": "Enterprise Search & Web Connector #95",
+      "vendor": "Community Contributor",
+      "category": "Search & Web",
+      "repository": "https://github.com/mcp-ecosystem/connector-95",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-096",
+      "serverName": "Enterprise Developer Tools Connector #96",
+      "vendor": "Enterprise Partner",
+      "category": "Developer Tools",
+      "repository": "https://github.com/mcp-ecosystem/connector-96",
+      "grade": "B",
+      "securityScore": 75,
+      "findings": [
+        {
+          "ruleId": "MCP-004",
+          "severity": "high",
+          "title": "Direct Unchecked SQL Execution Without Wire Proxy",
+          "cwe": "CWE-89",
+          "owaspLlm": "LLM06: Excessive Agency",
+          "toolName": "query",
+          "description": "Database tool executes raw SQL strings without DBShield wire-level dry-run or rollback defenses.",
+          "remediation": "Deploy DBShield wire proxy with instant rollback on unconstrained DROP/TRUNCATE/UPDATE statements."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: B (75/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-097",
+      "serverName": "Enterprise Cloud & DevOps Connector #97",
+      "vendor": "Community Contributor",
+      "category": "Cloud & DevOps",
+      "repository": "https://github.com/mcp-ecosystem/connector-97",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-098",
+      "serverName": "Enterprise Database & Storage Connector #98",
+      "vendor": "Community Contributor",
+      "category": "Database & Storage",
+      "repository": "https://github.com/mcp-ecosystem/connector-98",
+      "grade": "F",
+      "securityScore": 25,
+      "findings": [
+        {
+          "ruleId": "MCP-001",
+          "severity": "critical",
+          "title": "Unconstrained Host Command Execution",
+          "cwe": "CWE-78",
+          "owaspLlm": "LLM06: Excessive Agency",
+          "toolName": "exec_shell_action",
+          "description": "Tool allows raw shell command execution without AgentShield/eBPF kernel isolation.",
+          "remediation": "Confine command execution using AgentShield Linux eBPF/Zygote sandbox or restrict to allowlisted binaries."
+        },
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 2 findings (1 critical). Overall Security Grade: F (25/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-099",
+      "serverName": "Enterprise Filesystem & OS Connector #99",
+      "vendor": "Enterprise Partner",
+      "category": "Filesystem & OS",
+      "repository": "https://github.com/mcp-ecosystem/connector-99",
+      "grade": "B",
+      "securityScore": 80,
+      "findings": [
+        {
+          "ruleId": "MCP-005",
+          "severity": "high",
+          "title": "Suspicious / Poisoned Tool Description",
+          "cwe": "CWE-1426",
+          "owaspLlm": "LLM01: Prompt Injection",
+          "toolName": "dispatch",
+          "description": "Tool description contains prompt-altering keywords capable of hijacking the LLM agent instruction stack.",
+          "remediation": "Sanitize MCP tool descriptions and enforce deterministic schema evaluation."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: B (80/100)."
+    },
+    {
+      "serverId": "mcp-catalog-server-100",
+      "serverName": "Enterprise Productivity Connector #100",
+      "vendor": "Community Contributor",
+      "category": "Productivity",
+      "repository": "https://github.com/mcp-ecosystem/connector-100",
+      "grade": "A",
+      "securityScore": 90,
+      "findings": [
+        {
+          "ruleId": "MCP-006",
+          "severity": "medium",
+          "title": "Lack of Tool Invocation Rate Limiting",
+          "cwe": "CWE-400",
+          "owaspLlm": "LLM04: Model Denial of Service",
+          "description": "Server does not implement token bucket or concurrency caps, risking upstream quota exhaustion.",
+          "remediation": "Apply mcp-monetize or edge clearinghouse rate-limiting gates."
+        }
+      ],
+      "summary": "Audited 1 tools. Detected 1 findings (0 critical). Overall Security Grade: A (90/100)."
+    }
+  ]
+}
