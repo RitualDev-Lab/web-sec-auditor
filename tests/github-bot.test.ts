@@ -280,4 +280,21 @@ describe("GitHub Bot - Webhook Server HTTP Lifecycle", () => {
     const data = (await res.json()) as { status: string };
     assert.strictEqual(data.status, "processing");
   });
+
+  it("POST /webhook rejects requests if no webhook secret is configured and insecureNoHmac is false", async () => {
+    const unauthServer = new BotServer({});
+    const unauthPort = await unauthServer.listen(0);
+    try {
+      const res = await fetch(`http://localhost:${unauthPort}/webhook`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "opened" }),
+      });
+      assert.strictEqual(res.status, 401);
+      const data = (await res.json()) as { error: string };
+      assert.ok(data.error.includes("Webhook HMAC authentication required"));
+    } finally {
+      await unauthServer.close();
+    }
+  });
 });

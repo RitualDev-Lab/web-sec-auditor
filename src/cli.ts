@@ -53,7 +53,9 @@ const HELP_TEXT = `
 
   OPTIONS:
     --target <url>              Target base URL for contract-driven API fuzzer
-    --verify-secrets            Perform non-destructive live verification pings for AI credentials
+    --verify-secrets            Perform read-only live verification against official provider APIs (OpenAI, Anthropic, HuggingFace, Gemini)
+    --allow-private             Allow auditing localhost or private RFC 1918 IPs (default: blocked for SSRF protection)
+    --quiet, -q                 Suppress promotional headers and non-essential telemetry output
     --format <text|json>        Output format (default: text)
     --sarif <file.sarif>        Export standardized OASIS SARIF v2.1.0 log
     --html <file.html>          Export self-contained interactive HTML executive dashboard
@@ -69,10 +71,11 @@ const HELP_TEXT = `
     --rule <ruleId>             Rule ID for patch command (e.g. SEC-INJ-SQLI)
     --dry-run                   Preview patch unified diff without modifying file on disk
     --port <number>             Port for bot webhook listener (default: 3000)
-    --secret <secret>           Webhook HMAC secret (or env WEBHOOK_SECRET)
-    --token <token>             GitHub Token (or env GITHUB_TOKEN)
-    --app-id <id>               GitHub App ID (or env GITHUB_APP_ID)
-    --private-key <pem>         GitHub App Private Key PEM string or path
+    --secret <secret>           Webhook HMAC secret (Prefer WEBHOOK_SECRET env var for security)
+    --token <token>             GitHub Token (Prefer GITHUB_TOKEN env var for security)
+    --app-id <id>               GitHub App ID (Prefer GITHUB_APP_ID env var)
+    --private-key <pem>         GitHub App Private Key PEM string or path (Prefer GITHUB_APP_PRIVATE_KEY env var)
+    --insecure-no-hmac          Explicitly allow bot webhook server without HMAC secret (local testing only)
     --pr <number>               Pull request number for pr-scan command
     --owner <owner>             Repository owner for pr-scan command
     --repo <repo>               Repository name for pr-scan command
@@ -404,6 +407,20 @@ SUMMARY:
 
 async function main() {
   const args = process.argv.slice(2);
+
+  // Warn if sensitive credentials are passed as CLI arguments
+  if (args.includes("--token") || args.includes("--secret") || args.includes("--private-key")) {
+    console.warn(
+      "⚠️  Security Notice: Passing secrets via CLI arguments exposes them in process listings (ps). We recommend setting environment variables (GITHUB_TOKEN, WEBHOOK_SECRET, GITHUB_APP_PRIVATE_KEY) instead.",
+    );
+  }
+
+  // Handle MCP server start (either via explicit 'mcp' command or when spawned by an MCP stdio client)
+  if (args[0] === "mcp" || (args.length === 0 && !process.stdin.isTTY)) {
+    await startMcpServer();
+    return;
+  }
+
   const command = args[0] || "help";
 
   if (args.includes("--help") || args.includes("-h") || command === "help") {
@@ -414,12 +431,6 @@ async function main() {
   if (args.includes("--version") || args.includes("-v") || command === "version") {
     console.log(`web-sec-auditor v${VERSION}`);
     process.exit(0);
-  }
-
-  // Handle MCP server start
-  if (command === "mcp") {
-    await startMcpServer();
-    return;
   }
 
   const sarifIdx = args.indexOf("--sarif");
@@ -444,7 +455,8 @@ async function main() {
       let scaReport: ScaScanReport | undefined;
 
       if (isUrl) {
-        const dast = new DastScanner();
+        const allowPrivate = args.includes("--allow-private");
+        const dast = new DastScanner({ allowPrivate });
         dastReport = await dast.scanUrl(target);
         console.log(renderTextReport(dastReport));
       } else {
@@ -519,12 +531,18 @@ async function main() {
         ignoreTestFiles: args.includes("--ignore-test-files"),
       });
 
-      console.log(`
+      const isQuiet =
+        args.includes("--quiet") ||
+        args.includes("-q") ||
+        process.env.CI === "true" ||
+        process.env.QUIET === "true";
+      if (!isQuiet) {
+        console.log(`
 ─────────────────────────────────────────────────────────────
-💡 Need an official SOC 2 / ISO 27001 manual security audit or custom pentest?
-   Book a Professional AI Security Audit ($199): https://ritualdev.in/audit
+💡 Security documentation & verification guides: https://ritualdev.in/web-sec-auditor
 ─────────────────────────────────────────────────────────────
 `);
+      }
       break;
     }
 
@@ -546,8 +564,14 @@ async function main() {
 
       const checkTlsCert = !args.includes("--no-cert");
       const enableActiveProbes = args.includes("--active-probes");
+      const allowPrivate = args.includes("--allow-private");
 
-      const scanner = new DastScanner({ timeoutMs, checkTlsCert, enableActiveProbes });
+      const scanner = new DastScanner({
+        timeoutMs,
+        checkTlsCert,
+        enableActiveProbes,
+        allowPrivate,
+      });
       try {
         const report = await scanner.scanUrl(targetUrl);
         if (format === "json") {
@@ -632,6 +656,12 @@ async function main() {
 
       const scanGitHistory = args.includes("--git-history");
       const verifySecrets = args.includes("--verify-secrets");
+
+      if (verifySecrets) {
+        console.log(
+          "ℹ️  [--verify-secrets active] Performing non-destructive read-only verification probes against official AI provider APIs (api.openai.com, api.anthropic.com, huggingface.co, generativelanguage.googleapis.com)...",
+        );
+      }
 
       const hunter = new SecretHunter();
       try {
@@ -781,6 +811,16 @@ ${recipe.diff}
       const secretIdx = args.indexOf("--secret");
       const webhookSecret = secretIdx !== -1 ? args[secretIdx + 1] : process.env.WEBHOOK_SECRET;
 
+      const allowInsecureHmac = args.includes("--insecure-no-hmac");
+      if (!webhookSecret && !allowInsecureHmac) {
+        console.error(
+          "❌ Security Error: Webhook HMAC secret is required to start the bot server.\n" +
+            "   Please set the WEBHOOK_SECRET environment variable (or pass --secret <secret>).\n" +
+            "   For local testing only, you may pass --insecure-no-hmac to explicitly allow unauthenticated webhooks.",
+        );
+        process.exit(1);
+      }
+
       const tokenIdx = args.indexOf("--token");
       const githubToken = tokenIdx !== -1 ? args[tokenIdx + 1] : process.env.GITHUB_TOKEN;
 
@@ -809,6 +849,7 @@ ${recipe.diff}
       const server = new BotServer({
         port,
         webhookSecret,
+        insecureNoHmac: allowInsecureHmac,
         githubToken,
         appId,
         privateKey,
@@ -825,7 +866,7 @@ Webhook URL:     http://localhost:${actualPort}/webhook
 Health Check:    http://localhost:${actualPort}/health
 Severity Gate:   ${failOnLevel ? failOnLevel.toUpperCase() : "HIGH"}
 Auto-Patch PR:   ${autoPatch ? "ENABLED (1-Click fix PRs enabled)" : "DISABLED"}
-HMAC Auth:       ${webhookSecret ? "ENABLED" : "DISABLED (Secret missing)"}
+HMAC Auth:       ${webhookSecret ? "ENABLED" : allowInsecureHmac ? "DISABLED (--insecure-no-hmac opt-in)" : "REQUIRED"}
 ─────────────────────────────────────────────────────────────
 Waiting for pull_request and issue_comment webhook events...
 `);

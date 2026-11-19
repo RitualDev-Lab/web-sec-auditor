@@ -5,6 +5,7 @@ export type BotSeverityGate = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "NONE";
 export interface BotConfig {
   port?: number;
   webhookSecret?: string;
+  insecureNoHmac?: boolean; // Must be explicitly set to allow unauthenticated webhooks
   appId?: string;
   privateKey?: string;
   githubToken?: string;

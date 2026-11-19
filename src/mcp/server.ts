@@ -19,22 +19,41 @@ export function createMcpServer(): McpServer {
   // 1. Tool: audit_url (DAST)
   server.tool(
     "audit_url",
-    "Audit a live web application or API endpoint for missing security headers (CSP, HSTS, XFO), insecure cookies, dangerous CORS policies, and transport gaps.",
+    "Audit a live web application or API endpoint for missing security headers (CSP, HSTS, XFO), insecure cookies, dangerous CORS policies, and transport gaps. Protected against SSRF.",
     {
       url: z.string().describe("Target URL to audit, e.g. https://example.com"),
       timeoutMs: z.number().optional().describe("Request timeout in milliseconds (default: 10000)"),
+      allowPrivate: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe(
+          "Explicitly permit auditing localhost or private RFC 1918 addresses (default: false to prevent SSRF)",
+        ),
     },
-    async ({ url, timeoutMs }) => {
-      const scanner = new DastScanner({ timeoutMs });
-      const report = await scanner.scanUrl(url);
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(report, null, 2),
-          },
-        ],
-      };
+    async ({ url, timeoutMs, allowPrivate }) => {
+      try {
+        const scanner = new DastScanner({ timeoutMs, allowPrivate });
+        const report = await scanner.scanUrl(url);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(report, null, 2),
+            },
+          ],
+        };
+      } catch (err) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text",
+              text: `Audit failed: ${(err as Error).message}`,
+            },
+          ],
+        };
+      }
     },
   );
 
@@ -115,18 +134,48 @@ export function createMcpServer(): McpServer {
     },
   );
 
-  // 5. Tool: generate_patch (Auto-Patch)
+  // 5. Tool: generate_patch (Auto-Patch Preview)
   server.tool(
     "generate_patch",
-    "Generate automated defensive remediation code and a unified git diff patch for a detected vulnerability.",
+    "Generate automated defensive remediation code and a unified git diff patch for a detected vulnerability (read-only preview; does not modify disk).",
     {
-      filePath: z.string().describe("Path to the vulnerable file"),
+      filePath: z.string().describe("Path to the vulnerable file within project workspace"),
       lineNumber: z.number().describe("Line number where the vulnerability was flagged"),
       ruleId: z.string().describe("Vulnerability rule ID (e.g. SEC-INJ-SQLI, SEC-INJ-CMD)"),
     },
     async ({ filePath, lineNumber, ruleId }) => {
       const resolved = path.resolve(filePath);
-      const content = await fs.readFile(resolved, "utf-8");
+
+      // Path traversal security verification
+      const cwd = process.cwd();
+      const relative = path.relative(cwd, resolved);
+      if (relative.startsWith("..") && !path.isAbsolute(filePath)) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text",
+              text: `Path traversal restriction: filePath '${filePath}' resolves outside the current working directory.`,
+            },
+          ],
+        };
+      }
+
+      let content: string;
+      try {
+        content = await fs.readFile(resolved, "utf-8");
+      } catch (err) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text",
+              text: `Failed to read target file '${filePath}': ${(err as Error).message}`,
+            },
+          ],
+        };
+      }
+
       const patchEngine = new PatchEngine();
       const recipe = patchEngine.generatePatch(resolved, content, lineNumber, ruleId);
 
@@ -145,7 +194,15 @@ export function createMcpServer(): McpServer {
         content: [
           {
             type: "text",
-            text: JSON.stringify(recipe, null, 2),
+            text: JSON.stringify(
+              {
+                ...recipe,
+                safetyNotice:
+                  "Read-only preview: This tool only computes the defensive patch recipe and unified diff. It does NOT modify or overwrite files on disk. To apply this patch, confirm with user or run 'web-sec-auditor patch <file>'.",
+              },
+              null,
+              2,
+            ),
           },
         ],
       };

@@ -96,6 +96,7 @@ export interface DastScanOptions {
   userAgent?: string;
   followRedirects?: boolean;
   checkTlsCert?: boolean;
+  allowPrivate?: boolean; // default: false (SSRF protection blocks localhost & private RFC 1918 IPs)
   customHeaders?: Record<string, string>;
   enableActiveProbes?: boolean;
   activeProbeOptions?: {

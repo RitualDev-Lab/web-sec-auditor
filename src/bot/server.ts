@@ -17,6 +17,7 @@ export class BotServer {
     this.config = {
       port: config.port ?? 3000,
       webhookSecret: config.webhookSecret,
+      insecureNoHmac: config.insecureNoHmac ?? false,
       appId: config.appId,
       privateKey: config.privateKey,
       githubToken: config.githubToken,
@@ -101,6 +102,18 @@ export class BotServer {
         chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
       }
       const rawBody = Buffer.concat(chunks);
+
+      // Enforce webhook HMAC signature requirement
+      if (!this.config.webhookSecret && !this.config.insecureNoHmac) {
+        res.writeHead(401, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            error:
+              "Webhook HMAC authentication required. Configure WEBHOOK_SECRET or pass insecureNoHmac: true for testing.",
+          }),
+        );
+        return;
+      }
 
       // Verify webhook HMAC signature if secret is configured
       if (this.config.webhookSecret) {

@@ -179,7 +179,7 @@ test("DastScanner - End-to-end audit against a mock local HTTP server", async ()
   server.unref();
 
   try {
-    const scanner = new DastScanner({ timeoutMs: 3000, checkTlsCert: false });
+    const scanner = new DastScanner({ timeoutMs: 3000, checkTlsCert: false, allowPrivate: true });
     const report = await scanner.scanUrl(`http://127.0.0.1:${port}`);
 
     assert.equal(report.statusCode, 200);
@@ -199,4 +199,35 @@ test("DastScanner - End-to-end audit against a mock local HTTP server", async ()
   } finally {
     await new Promise<void>((resolve) => server.close(() => resolve()));
   }
+});
+
+test("DastScanner - SSRF protection blocks localhost and cloud metadata endpoints by default", async () => {
+  const scanner = new DastScanner({ timeoutMs: 1000 });
+
+  // Loopback target
+  await assert.rejects(
+    async () => await scanner.scanUrl("http://127.0.0.1:8080/admin"),
+    (err: Error) => {
+      assert.ok(err.message.includes("SSRF Protection"));
+      return true;
+    },
+  );
+
+  // Cloud metadata endpoint
+  await assert.rejects(
+    async () => await scanner.scanUrl("http://169.254.169.254/latest/meta-data"),
+    (err: Error) => {
+      assert.ok(err.message.includes("SSRF Protection"));
+      return true;
+    },
+  );
+
+  // Localhost hostname
+  await assert.rejects(
+    async () => await scanner.scanUrl("http://localhost:3000/internal"),
+    (err: Error) => {
+      assert.ok(err.message.includes("SSRF Protection"));
+      return true;
+    },
+  );
 });

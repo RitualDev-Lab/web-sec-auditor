@@ -1,4 +1,4 @@
-export type McpSecurityGrade = 'A+' | 'A' | 'B' | 'C' | 'D' | 'F';
+export type McpSecurityGrade = "A+" | "A" | "B" | "C" | "D" | "F";
 
 export interface McpToolParameter {
   name: string;
@@ -17,7 +17,13 @@ export interface McpServerProfile {
   id: string;
   name: string;
   vendor: string;
-  category: 'Developer Tools' | 'Cloud & DevOps' | 'Database & Storage' | 'Filesystem & OS' | 'Productivity' | 'Search & Web';
+  category:
+    | "Developer Tools"
+    | "Cloud & DevOps"
+    | "Database & Storage"
+    | "Filesystem & OS"
+    | "Productivity"
+    | "Search & Web";
   repository: string;
   downloadsWeekly: number;
   tools: McpToolDefinition[];
@@ -27,7 +33,7 @@ export interface McpServerProfile {
 
 export interface McpAuditFinding {
   ruleId: string;
-  severity: 'critical' | 'high' | 'medium' | 'low';
+  severity: "critical" | "high" | "medium" | "low";
   title: string;
   cwe: string;
   owaspLlm: string;

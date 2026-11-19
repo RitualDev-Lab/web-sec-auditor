@@ -1,9 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { DastScanner } from "../src/dast/index.js";
+import { generateHtmlReport, generateSarifReport } from "../src/reporting/index.js";
 import { SastScanner } from "../src/sast/index.js";
 import { SecretHunter } from "../src/secrets/index.js";
-import { generateHtmlReport, generateSarifReport } from "../src/reporting/index.js";
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -37,7 +37,9 @@ async function main() {
   const clientEmail = opts.email || "founder@client.com";
 
   if (!targetUrl && !repoPath) {
-    console.error("Usage: tsx scripts/run-client-audit.ts --target <url> [--repo <path>] --name <clientName> --email <clientEmail>");
+    console.error(
+      "Usage: tsx scripts/run-client-audit.ts --target <url> [--repo <path>] --name <clientName> --email <clientEmail>",
+    );
     process.exit(1);
   }
 
@@ -47,13 +49,13 @@ async function main() {
 
   fs.mkdirSync(outDir, { recursive: true });
 
-  console.log(`\n🛡️  [AgentShield Security Audit Engine]`);
-  console.log(`──────────────────────────────────────────────`);
+  console.log("\n🛡️  [AgentShield Security Audit Engine]");
+  console.log("──────────────────────────────────────────────");
   console.log(`Client:    ${clientName} (${clientEmail})`);
   console.log(`Order ID:  ${orderId}`);
   console.log(`Target:    ${targetUrl || repoPath}`);
   console.log(`Output:    ${outDir}`);
-  console.log(`──────────────────────────────────────────────\n`);
+  console.log("──────────────────────────────────────────────\n");
 
   let dastReport = undefined;
   let sastReport = undefined;
@@ -66,8 +68,8 @@ async function main() {
       const dastScanner = new DastScanner();
       dastReport = await dastScanner.scanUrl(targetUrl);
       console.log(`✓ DAST Complete: Grade ${dastReport.overallGrade || "A"}`);
-    } catch (err: any) {
-      console.warn(`⚠️ DAST scan warning:`, err.message);
+    } catch (err: unknown) {
+      console.warn("⚠️ DAST scan warning:", (err as Error).message);
     }
   }
 
@@ -78,8 +80,8 @@ async function main() {
       const sastScanner = new SastScanner();
       sastReport = await sastScanner.scanPath(repoPath);
       console.log(`✓ SAST Complete: ${sastReport.findings.length} findings`);
-    } catch (err: any) {
-      console.warn(`⚠️ SAST scan warning:`, err.message);
+    } catch (err: unknown) {
+      console.warn("⚠️ SAST scan warning:", (err as Error).message);
     }
 
     console.log(`🔑 [3/3] Running Shannon Entropy Secret Hunter on ${repoPath}...`);
@@ -87,13 +89,13 @@ async function main() {
       const secretHunter = new SecretHunter();
       secretReport = await secretHunter.scanPath(repoPath);
       console.log(`✓ Secret Scan Complete: ${secretReport.findings.length} findings`);
-    } catch (err: any) {
-      console.warn(`⚠️ Secret scan warning:`, err.message);
+    } catch (err: unknown) {
+      console.warn("⚠️ Secret scan warning:", (err as Error).message);
     }
   }
 
   // 3. Compile Reports
-  console.log(`\n📊 Compiling Executive Reports & SARIF Log...`);
+  console.log("\n📊 Compiling Executive Reports & SARIF Log...");
   const reportPayload = { dastReport, sastReport, secretReport };
 
   const htmlContent = generateHtmlReport(reportPayload);
@@ -173,10 +175,10 @@ https://ritualdev.in/audit
 
   console.log(`\n🎉 Audit Package Complete for ${clientName}!`);
   console.log(`📁 Files generated in: ${outDir}`);
-  console.log(`   - executive-audit-report.html`);
-  console.log(`   - results.sarif`);
-  console.log(`   - verified-badge.svg`);
-  console.log(`   - delivery-email.md (Ready to copy-paste to client)\n`);
+  console.log("   - executive-audit-report.html");
+  console.log("   - results.sarif");
+  console.log("   - verified-badge.svg");
+  console.log("   - delivery-email.md (Ready to copy-paste to client)\n");
 }
 
 main().catch(console.error);

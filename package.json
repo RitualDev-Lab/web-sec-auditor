@@ -6,13 +6,10 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "web-sec-auditor": "dist/cli.js"
+    "web-sec-auditor": "dist/cli.js",
+    "web-sec-mcp": "bin/mcp.js"
   },
-  "files": [
-    "dist",
-    "README.md",
-    "LICENSE"
-  ],
+  "files": ["dist", "bin", "README.md", "LICENSE", "LAUNCHGUIDE.md"],
   "publishConfig": {
     "access": "public",
     "provenance": true

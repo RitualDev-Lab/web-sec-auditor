@@ -18,6 +18,8 @@ export * from "./tls.js";
 export * from "./scoring.js";
 export * from "./probes.js";
 export * from "./fuzzer.js";
+export * from "./url-validator.js";
+import { validateSafeUrl } from "./url-validator.js";
 
 export class DastScanner {
   private defaultOptions: DastScanOptions;
@@ -40,6 +42,13 @@ export class DastScanner {
     customOptions?: DastScanOptions,
   ): Promise<DastScanReport> {
     const opts = { ...this.defaultOptions, ...customOptions };
+
+    // SSRF Validation: Enforce protocol restrictions and block private addresses unless allowPrivate is set
+    const validation = validateSafeUrl(targetUrl, opts.allowPrivate);
+    if (!validation.valid) {
+      throw new Error(validation.error);
+    }
+
     const parsedUrl = new URL(targetUrl);
     const isHttps = parsedUrl.protocol === "https:";
 
