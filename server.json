@@ -1,0 +1,23 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.RitualDev-Lab/web-sec-auditor",
+  "title": "WebSecAuditor AI Cybersecurity & Vulnerability Auditor",
+  "description": "Enterprise-grade AI vulnerability auditor for web applications, APIs, and codebases.",
+  "version": "1.1.1",
+  "status": "active",
+  "repository": {
+    "url": "https://github.com/RitualDev-Lab/web-sec-auditor",
+    "source": "github"
+  },
+  "website": "https://github.com/RitualDev-Lab/web-sec-auditor",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@ritualdev-lab/web-sec-auditor",
+      "version": "1.1.1",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}
